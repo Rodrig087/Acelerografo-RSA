@@ -1,0 +1,7 @@
+NOM00_
+/home/rsa/TMP/
+/home/rsa/Resultados/RegistroContinuo/
+/home/rsa/Resultados/EventosDetectados/
+/home/rsa/Resultados/EventosExtraidos/
+/home/rsa/Resultados/Consumo/
+
