@@ -32,13 +32,13 @@ offTran = 0
 offVert = 0
 
 #Ingreso de datos:
-nombreEstacion = "/home/rsa/Resultados/EventosExtraidos"
+nombreEstacion = "/home/rsa/resultados/eventos-extraidos"
 nombreArchivo = input("Ingrese el nombre del archivo: ")
 factorDiezmado = 1
 duracionEvento = (24 * 3600)
 
 #Abre el archivo binario:
-path = nombreEstacion + "/" + str(nombreArchivo) + ".bin"
+path = nombreEstacion + "/" + str(nombreArchivo)
 f=open(path, "rb")
 tramaDatos = np.fromfile(f, np.int8, 2506)
 horaInicioSeg = (3600*tramaDatos[tramaSize-3]) + (60*tramaDatos[tramaSize-2]) + (tramaDatos[tramaSize-1])

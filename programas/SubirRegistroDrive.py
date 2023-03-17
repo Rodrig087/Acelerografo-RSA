@@ -8,7 +8,7 @@ from oauth2client import file, client, tools
 
 from datetime import datetime
 import time
-import sys
+
 
 # ///////////////////////////////// Archivos //////////////////////////////////
 
@@ -185,13 +185,12 @@ if __name__ == '__main__':
     fechaFormato = fechaActual.strftime('%Y-%m-%d') 
              
     ficheroConfiguracion = open(archivoDatosConfiguracion)
-    #ficheroNombresArchivos = open(archivoNombresArchivosRC)
+    ficheroNombresArchivos = open(archivoNombresArchivosRC)
     
     lineasFicheroConfiguracion = ficheroConfiguracion.readlines()
-    #lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
+    lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
     
-    #nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
-    nombreArchvioRegistroContinuo = sys.argv[1]
+    nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
     print(nombreArchvioRegistroContinuo)
     pathArchivoRegistroContinuo = lineasFicheroConfiguracion[2].rstrip('\n') + nombreArchvioRegistroContinuo
     pathDriveID = lineasFicheroConfiguracion[6].rstrip('\n')
@@ -200,6 +199,7 @@ if __name__ == '__main__':
     objLogFile = pathLogFiles + 'Log' + lineasFicheroConfiguracion[0].rstrip('\n') + fechaFormato + '.txt'
     # Llama al metodo para crear un nuevo archivo log
     #guardarDataInLogFile ("Inicio")
+    
     
     #Llama al metodo para intentar conectarse a Google Drive
     service = Try_Autenticar_Drive(SCOPES)
@@ -214,7 +214,7 @@ if __name__ == '__main__':
             #file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/x-script.txt', pathArchivoRegistroContinuo)
             file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/plain', pathArchivoRegistroContinuo)
             guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
-            print('Archivo ' + nombreArchvioRegistroContinuo + ' subido correctamente a Google Drive ' )
+            print('Archivo' + nombreArchvioRegistroContinuo + ' subido correctamente a Google Drive ' )
         except:
             # Llama al metodo para guardar el evento ocurrido en el archivo
             guardarDataInLogFile ("Error subiendo el archivo a Google Drive")

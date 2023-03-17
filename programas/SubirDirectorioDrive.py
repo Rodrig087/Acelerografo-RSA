@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 from googleapiclient import errors
 from googleapiclient.http import MediaFileUpload
@@ -6,33 +5,77 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
+import os
+
 from datetime import datetime
 import time
-import sys
 
+
+global objLogFile
+global pathDriveID
+global service
+    
 # ///////////////////////////////// Archivos //////////////////////////////////
 
+pathDirectorioArchivos = '/home/rsa/resultados/eventos-extraidos/'
+
 pathArchivosConfiguracion = '/home/rsa/configuracion/'
-pathNombresArchvivosRC = '/home/rsa/tmp/'
 pathLogFiles = '/home/rsa/log-files/'
 
 archivoDatosConfiguracion = pathArchivosConfiguracion + 'DatosConfiguracion.txt'
-archivoNombresArchivosRC = pathNombresArchvivosRC + 'NombreArchivoRegistroContinuo.tmp'
+#archivoNombresArchivosDirectorio 
 
 credentialsFile = pathArchivosConfiguracion + 'credentials.json'
 tokenFile = pathArchivosConfiguracion + 'token.json'
-#nombreArchivo = 'C00N02_210611-065731-GPS_090.dat'
-#archivoSubir = direccionCarpeta + nombreArchivo
-# ID de la carpeta para almacenar los archivos en Drive
-# Esta ID se obtiene ingresando al Drive mediante el navegador y en la URL
-# https://drive.google.com/drive/u/1/folders/12S_kjBDl1wZALM1B0El892Oa-Il7kEXa
-#pathDriveID = '1LLSy9PkgP7CEUKfPYPjwWgp48V9i6NA3'
 
 # /////////////////////////////////////////////////////////////////////////////
 
 
 
 # ////////////////////////////////// Metodos //////////////////////////////////
+
+
+# **********************************************************************
+# ********************* Programa Principal *****************************
+# **********************************************************************
+def programaPrincipal ():
+    
+    global pathDriveID 
+    global objLogFile
+    global service
+        
+    # If modifying these scopes, delete the file token.json.
+    SCOPES = 'https://www.googleapis.com/auth/drive'
+    # Llama al metodo para intentar conectarse a Google Drive
+    service = Try_Autenticar_Drive(SCOPES)
+     
+    # Fecha actual
+    fechaActual = datetime.now()
+    fechaFormato = fechaActual.strftime('%Y-%m-%d') 
+    
+    #Recupera la carpeta
+    ficheroConfiguracion = open(archivoDatosConfiguracion)
+    lineasFicheroConfiguracion = ficheroConfiguracion.readlines()
+    pathDriveID = lineasFicheroConfiguracion[7].rstrip('\n')
+    
+    # Crea el archivo para almacenar los logs del proyectos, que eventos ocurren
+    objLogFile = pathLogFiles + 'Log' + lineasFicheroConfiguracion[0].rstrip('\n') + fechaFormato + '.txt'
+    print(objLogFile)
+    # Llama al metodo para crear un nuevo archivo log
+    #guardarDataInLogFile ("Inicio")
+    
+    #Lista los archivos del directorio a subir
+    listaArchivos = os.listdir(pathDirectorioArchivos)
+    listaArchivosOrdenada = sorted(listaArchivos)
+    
+    #print(listaArchivosOrdenada)
+        
+    dicArchivosEnviados = subirArchivosDrive (listaArchivosOrdenada)  
+    
+# **********************************************************************
+# ******************* Fin Programa Principal ***************************
+# **********************************************************************    
+
 
 # **********************************************************************
 # ******************* Metodo get_authenticated *************************
@@ -101,19 +144,7 @@ def insert_file(service, name, description, parent_id, mime_type, filename):
             body = body,
             media_body = media_body,
             fields='id').execute()
-        
-        #Prueba
-        # response = None
-        # while response is None:
-        #     status, response = file.next_chunk()
-        #     if status:
-        #         #logger.info('Uploaded {}%'.format(int(100*status.progress()))
-        #         print ("Uploaded %d%%." % int(status.progress() * 100))
-        #Fin prueba
-        
-        # Uncomment the following line to print the File ID
-        # print 'File ID: %s' % file['id']
-        
+                
         return file
         #print "Upload Complete!"
     
@@ -136,15 +167,56 @@ def Try_Autenticar_Drive(SCOPES):
         service = get_authenticated(SCOPES)
         isConecctedDrive = True
         print("Inicio Drive Ok")
-        guardarDataInLogFile ("Inicio Drive Ok")
+        #guardarDataInLogFile ("Inicio Drive Ok")
         return service
     except:
         isConecctedDrive = False
         print("********** Error Inicio Drive ********")
-        guardarDataInLogFile ("Error Inicio Drive")
+        #guardarDataInLogFile ("Error Inicio Drive")
         return 0
 # **********************************************************************
 # Fin del metodo para conectarse a Drive
+# **********************************************************************
+
+
+# **********************************************************************
+# ********************* Metodo subirArchivosDrive **********************
+# **********************************************************************
+# Metodo que sube los archivos descargados por los nodos al Drive
+def subirArchivosDrive (listaNombresArchivosNodos):
+    global service
+    global objLogFile
+
+    print ('')
+    print ('Comienza subida de archivos al Drive')
+    fechaActual = datetime.now()
+    fechaFormato = fechaActual.strftime('%Y-%m-%d-%H-%M-%S')
+    print (fechaFormato)
+
+    if len(listaNombresArchivosNodos) > 0:
+        print ('Total archivos ' + str(len(listaNombresArchivosNodos)))
+    else:
+        print ('No hay archivos para subir')
+
+    # Recorre la lista de nombres de archivos de los nodos que debieron crearse
+    for nombreArchivo in listaNombresArchivosNodos:
+        # Agrega el path de resultados
+        pathTotal = pathDirectorioArchivos + nombreArchivo
+        print ('Archivo ', pathTotal)
+        # Llama al metodo para subir el archivo a Google Drive
+        try:
+            # Llama al metodo para guardar el evento ocurrido en el archivo
+            print('Subiendo el archivo: %s' %pathTotal)
+            #guardarDataInLogFile ("Subiendo el archivo: " + nombreArchivo)
+            file_uploaded = insert_file(service, nombreArchivo, nombreArchivo, pathDriveID, 'text/x-script.txt', pathTotal)
+            #guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
+            print('Archivo' + nombreArchivo + ' subido correctamente a Google Drive ' )
+        except:
+            # Llama al metodo para guardar el evento ocurrido en el archivo
+            #guardarDataInLogFile ("Error subiendo el archivo a Google Drive")
+            print ('Error subiendo el archivo a Google Drive')
+# **********************************************************************
+# ***************** Fin Metodo subirArchivosDrive **********************
 # **********************************************************************
 
 
@@ -169,54 +241,11 @@ def guardarDataInLogFile (info):
 
 
 
+
 # ///////////////////////////////// Principal /////////////////////////////////
 
 if __name__ == '__main__':
+    programaPrincipal ()
     
-    #service  = 0
-    # If modifying these scopes, delete the file token.json.
-    SCOPES = 'https://www.googleapis.com/auth/drive'
-	 # Llama al metodo para realizar la autenticacion, la primera vez se
-	 # abrira el navegador, pero desde la segunda ya no
-	 #service = get_authenticated(SCOPES)
      
-    # Fecha actual
-    fechaActual = datetime.now()
-    fechaFormato = fechaActual.strftime('%Y-%m-%d') 
-             
-    ficheroConfiguracion = open(archivoDatosConfiguracion)
-    #ficheroNombresArchivos = open(archivoNombresArchivosRC)
-    
-    lineasFicheroConfiguracion = ficheroConfiguracion.readlines()
-    #lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
-    
-    #nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
-    nombreArchvioRegistroContinuo = sys.argv[1]
-    print(nombreArchvioRegistroContinuo)
-    pathArchivoRegistroContinuo = lineasFicheroConfiguracion[2].rstrip('\n') + nombreArchvioRegistroContinuo
-    pathDriveID = lineasFicheroConfiguracion[6].rstrip('\n')
-    
-    # Crea el archivo para almacenar los logs del proyectos, que eventos ocurren
-    objLogFile = pathLogFiles + 'Log' + lineasFicheroConfiguracion[0].rstrip('\n') + fechaFormato + '.txt'
-    # Llama al metodo para crear un nuevo archivo log
-    #guardarDataInLogFile ("Inicio")
-    
-    #Llama al metodo para intentar conectarse a Google Drive
-    service = Try_Autenticar_Drive(SCOPES)
-    
-    if isConecctedDrive == True:
-        # Llama al metodo para subir el archivo a Google Drive
-        try:
-            # El metodo tiene este formato: insert_file(service, name, description, parent_id, mime_type, filename)
-            #file_uploaded = insert_file(service, nombreArchivo, nombreArchivo, pathDriveID, 'text/x-script.txt', archivoSubir)
-            print('Subiendo el archivo: %s' %pathArchivoRegistroContinuo)
-            guardarDataInLogFile ("Subiendo el archivo: " + nombreArchvioRegistroContinuo)
-            #file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/x-script.txt', pathArchivoRegistroContinuo)
-            file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/plain', pathArchivoRegistroContinuo)
-            guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
-            print('Archivo ' + nombreArchvioRegistroContinuo + ' subido correctamente a Google Drive ' )
-        except:
-            # Llama al metodo para guardar el evento ocurrido en el archivo
-            guardarDataInLogFile ("Error subiendo el archivo a Google Drive")
-            print ('Error subiendo el archivo a Google Drive')
 # /////////////////////////////////////////////////////////////////////////////

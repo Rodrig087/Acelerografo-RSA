@@ -1,7 +1,7 @@
 NOM00_
-/home/rsa/TMP/
-/home/rsa/Resultados/RegistroContinuo/
-/home/rsa/Resultados/EventosDetectados/
-/home/rsa/Resultados/EventosExtraidos/
-/home/rsa/Resultados/Consumo/
+/home/rsa/tmp/
+/home/rsa/resultados/registro-continuo/
+/home/rsa/resultados/eventos-detectados/
+/home/rsa/resultados/eventos-extraidos/
+/home/rsa/resultados/consumo/
 

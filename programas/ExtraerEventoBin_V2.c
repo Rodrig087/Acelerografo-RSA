@@ -1,8 +1,5 @@
 //Autor: Milton Muñoz
 //Fecha: 24/03/2021
-//Version OS: Raspbian OS
-//Compilar: gcc ExtraerEvento.c -o extraerevento
-//gcc /home/rsa/Programas/ExtraerEventoBin_V2.c -o /home/rsa/Ejecutables/extraerevento
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -244,7 +241,7 @@ void CrearArchivo(unsigned int duracionEvento, unsigned char *tramaRegistro)
 	printf("Leyendo archivo de configuracion...\n");
 
 	//Abre el fichero de datos de configuracion:
-	ficheroDatosConfiguracion = fopen("/home/rsa/Configuracion/DatosConfiguracion.txt", "rt");
+	ficheroDatosConfiguracion = fopen("/home/rsa/configuracion/DatosConfiguracion.txt", "rt");
 	//Recupera el contenido del archivo en la variable arg1 hasta que encuentra el carácter de fin de línea (\n):
 	fgets(idEstacion, 10, ficheroDatosConfiguracion);
 	for (i=0; i<4; i++){
