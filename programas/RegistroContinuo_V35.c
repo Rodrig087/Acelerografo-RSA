@@ -252,11 +252,11 @@ int ConfiguracionPrincipal()
     digitalWrite(LedTest, HIGH);
 
     // Genera un pulso para resetear el dsPIC:
-    // digitalWrite(MCLR, HIGH);
-    // delay(100);
-    // digitalWrite(MCLR, LOW);
-    // delay(100);
-    // digitalWrite(MCLR, HIGH);
+    digitalWrite(MCLR, HIGH);
+    delay(100);
+    digitalWrite(MCLR, LOW);
+    delay(100);
+    digitalWrite(MCLR, HIGH);
 
     printf("\n****************************************\n");
     printf("Configuracion completa\n");
