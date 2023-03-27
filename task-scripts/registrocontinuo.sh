@@ -7,7 +7,7 @@ case "$1" in
     sudo killall -q acelerografo
     sudo /home/rsa/ejecutables/acelerografo &
     sleep 10
-    python3 /home/rsa/ejecutables/SubirRegistroDrive.py &
+    sudo python3 /home/rsa/ejecutables/SubirRegistroDrive.py &
     ;;
   stop)
     echo "Deteniendo sistema de registro continuo..."
