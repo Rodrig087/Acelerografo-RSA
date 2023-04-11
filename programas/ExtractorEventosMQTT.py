@@ -5,10 +5,11 @@ import datetime
 import subprocess
 
 # Definir las variables
-server_address = "www.miservidor.com"
+server_address = "www.servidor.com"
 username = "usuario"
-password = "contrasena"
+password = "contraseña"
 topic = "evento"
+
 
 
 # Definir la funcion para buscar el archivo del registro continuo que contiene el dato solicitado
@@ -70,15 +71,31 @@ def BuscarArchivoRegistro(fecha_str):
         print(archivo_busqueda)
 
         # Prepara los parametros para pasarle al programa extraerevento
-        nombre_archivo = pathRegistroContinuo + archivo_busqueda
+        #nombre_archivo = pathRegistroContinuo + archivo_busqueda
+        nombre_archivo = archivo_busqueda
         hora_segundos = str((hora*3600) + (minuto*60) + segundo)
         duracion = str(duracion)
 
         # Ejecutar el programa de C con los argumentos definidos
         subprocess.run(["/home/rsa/ejecutables/extraerevento", nombre_archivo, hora_segundos, duracion])
 
+        # Obtener una lista de todos los archivos en la carpeta ordenados por fecha de creación
+        ruta_carpeta = "/home/rsa/resultados/eventos-extraidos/"
+        archivosExtraidos = sorted(
+            [os.path.join(ruta_carpeta, archivo) for archivo in os.listdir(ruta_carpeta)],
+            key=os.path.getctime,
+            reverse=True
+        )
+        ultimo_archivo = archivosExtraidos[0]
+        nombre_archivo_extraido = os.path.basename(ultimo_archivo)
+        print(nombre_archivo_extraido)
 
-    
+        # Subir archivo extraido a Drive:
+        comandoPython = ["sudo", "python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", nombre_archivo_extraido]
+        # resultado = subprocess.run(comandoPython, capture_output=True, text=True)
+        # print(resultado.stdout)
+        subprocess.run(comandoPython)
+  
 
 # Definir la función para extraer la fecha, hora y duración del payload JSON
 def procesar_mensaje(mensaje):
@@ -101,6 +118,12 @@ def on_message(client, userdata, msg):
     payload_str = msg.payload.decode('utf-8')
     print(payload_str)
     BuscarArchivoRegistro(payload_str)
+
+    # Publicar en el topic que ya se cumplio la tarea
+    publicar_mensaje(client, "status", "completado")
+
+def publicar_mensaje(client, topic, mensaje):
+    client.publish(topic, mensaje)
 
 # Crear una instancia del cliente MQTTc
 client = mqtt.Client()
