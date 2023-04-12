@@ -860,7 +860,7 @@ void DetectarEvento(unsigned char *tramaD)
                 printf("Enviado solicitud Evt Inicio %lu %lu Duracion %lu HoraActual %lu \n", fechaInitEvtAnt, tiempoInitEvtAnt, duracionEvtAnt, horaLong);
 
                 // Extrae el evento:
-                ExtraerEvento(filenameArchivoRegistroContinuo, tiempoInitEvtAnt, duracionEvtAnt);
+                //ExtraerEvento(filenameArchivoRegistroContinuo, tiempoInitEvtAnt, duracionEvtAnt);
             }
 
             // Si aun no se han detectado eventos y el dato es 1, significa el comienzo de un evento
