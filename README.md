@@ -1,3 +1,5 @@
+# Version de prueba instalada en el equipo CHA02 el 23/04/12
+
 Instrucciones de uso:
 
 Para configurar una estación por primera vez, siga los siguientes pasos:
