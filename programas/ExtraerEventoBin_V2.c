@@ -83,7 +83,12 @@ int main(int argc, char *argv[])
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//Ingreso de datos
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////	
-	strcpy(filenameArchivoRegistroContinuo, argv[1]);
+	//strcpy(filenameArchivoRegistroContinuo, argv[1]);
+	strcpy(nombreArchivo, argv[1]);
+	strcpy(filenameArchivoRegistroContinuo, "/home/rsa/resultados/registro-continuo/");
+	strcat(filenameArchivoRegistroContinuo, nombreArchivo);
+
+
 	horaEvento = atoi(argv[2]);
 	duracionEvento = atoi(argv[3]);
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -261,15 +266,15 @@ void CrearArchivo(unsigned int duracionEvento, unsigned char *tramaRegistro)
 	strcpy(extBin, ".dat");
 
 	//Extrae el tiempo de la trama pyload:
-	tiempoNodo[0] = tramaRegistro[tramaSize - 6]; //aa
+	tiempoNodo[0] = tramaRegistro[tramaSize - 6]; //dd
 	tiempoNodo[1] = tramaRegistro[tramaSize - 5]; //mm
-	tiempoNodo[2] = tramaRegistro[tramaSize - 4]; //dd
+	tiempoNodo[2] = tramaRegistro[tramaSize - 4]; //aa
 	tiempoNodo[3] = tramaRegistro[tramaSize - 3]; //hh
 	tiempoNodo[4] = tramaRegistro[tramaSize - 2]; //mm
 	tiempoNodo[5] = tramaRegistro[tramaSize - 1]; //ss
 
 	//Realiza la concatenacion para obtener el nombre del archivo:
-	sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d-%0.2d%0.2d%0.2d_", tiempoNodo[0], tiempoNodo[1], tiempoNodo[2], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5]);
+	sprintf(tiempoNodoStr, "%0.2d%0.2d%0.2d-%0.2d%0.2d%0.2d_", tiempoNodo[2], tiempoNodo[1], tiempoNodo[0], tiempoNodo[3], tiempoNodo[4], tiempoNodo[5]);
 	sprintf(duracionEventoStr, "%0.3d", duracionEvento);
 	
 	//Crea el archivo temporal para guardar el nombre del archivo de registro continuo actual:

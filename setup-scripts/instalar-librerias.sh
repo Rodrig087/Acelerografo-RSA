@@ -11,3 +11,6 @@ sudo make install
 
 # Instalacion libreria WirinPi
 sudo apt-get install wiringpi
+
+# Instalacion libreria paho-mqtt
+sudo pip3 install paho-mqtt

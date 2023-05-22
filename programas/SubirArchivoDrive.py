@@ -136,12 +136,12 @@ def Try_Autenticar_Drive(SCOPES):
         service = get_authenticated(SCOPES)
         isConecctedDrive = True
         print("Inicio Drive Ok")
-        guardarDataInLogFile ("Inicio Drive Ok")
+        #guardarDataInLogFile ("Inicio Drive Ok")
         return service
     except:
         isConecctedDrive = False
         print("********** Error Inicio Drive ********")
-        guardarDataInLogFile ("Error Inicio Drive")
+        #guardarDataInLogFile ("Error Inicio Drive")
         return 0
 # **********************************************************************
 # Fin del metodo para conectarse a Drive
@@ -151,16 +151,16 @@ def Try_Autenticar_Drive(SCOPES):
 # **********************************************************************
 # ****************** Metodo guardarDataInLogFile ***********************
 # **********************************************************************
-def guardarDataInLogFile (info):
-    global objLogFile
+# def guardarDataInLogFile (info):
+#     global objLogFile
 
-    timeActual = datetime.now()
-    timeFormato = timeActual.strftime('%Y-%m-%d %H:%M:%S')
+#     timeActual = datetime.now()
+#     timeFormato = timeActual.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Abre o crea el nuevo archivo de texto y en formato para escribir
-    archivo = open(objLogFile, "a")
-    archivo.write((timeFormato + "\t" + info + "\n"))
-    archivo.close()
+#     # Abre o crea el nuevo archivo de texto y en formato para escribir
+#     archivo = open(objLogFile, "a")
+#     archivo.write((timeFormato + "\t" + info + "\n"))
+#     archivo.close()
 # **********************************************************************
 # *************** Fin Metodo guardarDataInLogFile **********************
 # **********************************************************************
@@ -193,11 +193,11 @@ if __name__ == '__main__':
     #nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
     nombreArchvioRegistroContinuo = sys.argv[1]
     print(nombreArchvioRegistroContinuo)
-    pathArchivoRegistroContinuo = lineasFicheroConfiguracion[2].rstrip('\n') + nombreArchvioRegistroContinuo
-    pathDriveID = lineasFicheroConfiguracion[6].rstrip('\n')
+    pathArchivoRegistroContinuo = lineasFicheroConfiguracion[4].rstrip('\n') + nombreArchvioRegistroContinuo
+    pathDriveID = lineasFicheroConfiguracion[7].rstrip('\n')
     
     # Crea el archivo para almacenar los logs del proyectos, que eventos ocurren
-    objLogFile = pathLogFiles + 'Log' + lineasFicheroConfiguracion[0].rstrip('\n') + fechaFormato + '.txt'
+    #objLogFile = pathLogFiles + 'Log' + lineasFicheroConfiguracion[0].rstrip('\n') + fechaFormato + '.txt'
     # Llama al metodo para crear un nuevo archivo log
     #guardarDataInLogFile ("Inicio")
     
@@ -210,13 +210,13 @@ if __name__ == '__main__':
             # El metodo tiene este formato: insert_file(service, name, description, parent_id, mime_type, filename)
             #file_uploaded = insert_file(service, nombreArchivo, nombreArchivo, pathDriveID, 'text/x-script.txt', archivoSubir)
             print('Subiendo el archivo: %s' %pathArchivoRegistroContinuo)
-            guardarDataInLogFile ("Subiendo el archivo: " + nombreArchvioRegistroContinuo)
+            #guardarDataInLogFile ("Subiendo el archivo: " + nombreArchvioRegistroContinuo)
             #file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/x-script.txt', pathArchivoRegistroContinuo)
             file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/plain', pathArchivoRegistroContinuo)
-            guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
+            #guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
             print('Archivo ' + nombreArchvioRegistroContinuo + ' subido correctamente a Google Drive ' )
         except:
             # Llama al metodo para guardar el evento ocurrido en el archivo
-            guardarDataInLogFile ("Error subiendo el archivo a Google Drive")
+            #guardarDataInLogFile ("Error subiendo el archivo a Google Drive")
             print ('Error subiendo el archivo a Google Drive')
 # /////////////////////////////////////////////////////////////////////////////
