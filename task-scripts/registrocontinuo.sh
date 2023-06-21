@@ -12,6 +12,7 @@ case "$1" in
   stop)
     echo "Deteniendo sistema de registro continuo..."
     sudo killall -q acelerografo
+    sudo /home/rsa/ejecutables/resetmaster
     ;;
   *)
     echo "Modo de uso: registrocontinuo start|stop"

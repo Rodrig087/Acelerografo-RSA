@@ -17,10 +17,7 @@ echo $(date) > /home/rsa/resultados/registro-continuo/nueva-estacion.txt
 echo 'nueva-estacion.txt' > /home/rsa/tmp/NombreArchivoRegistroContinuo.tmp
 
 # Compila todos los programas escritos en C 
-gcc /home/rsa/Acelerografo-RSA/programas/RegistroContinuo_V40.c -o /home/rsa/ejecutables/acelerografo -lbcm2835 -lwiringPi -lm
-gcc /home/rsa/Acelerografo-RSA/programas/ComprobarRegistro_V3.c -o /home/rsa/ejecutables/comprobarregistro
-gcc /home/rsa/Acelerografo-RSA/programas/ExtraerEventoBin_V2.c -o /home/rsa/ejecutables/extraerevento
-gcc /home/rsa/Acelerografo-RSA/programas/ResetMaster.c -o /home/rsa/ejecutables/resetmaster -lbcm2835 -lwiringPi 
+sh setup-scripts/compilar.sh
 
 # Copia todos los programas escritos en Python a la carpeta /home/rsa/ejecutables
 cp /home/rsa/Acelerografo-RSA/programas/*.py /home/rsa/ejecutables/
