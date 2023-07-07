@@ -10,7 +10,7 @@ mkdir -p /home/rsa/tmp
 mkdir -p /home/rsa/resultados/eventos-detectados
 mkdir -p /home/rsa/resultados/eventos-extraidos
 mkdir -p /home/rsa/resultados/registro-continuo
-mkdir -p /home/rsa/resultados/consumo
+mkdir -p /home/rsa/resultados/mseed
 
 # Crea los archivos necesarios
 echo $(date) > /home/rsa/resultados/registro-continuo/nueva-estacion.txt

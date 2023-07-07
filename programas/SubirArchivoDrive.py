@@ -5,7 +5,7 @@ from googleapiclient.http import MediaFileUpload
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
-
+import os
 from datetime import datetime
 import time
 import sys
@@ -21,12 +21,42 @@ archivoNombresArchivosRC = pathNombresArchvivosRC + 'NombreArchivoRegistroContin
 
 credentialsFile = pathArchivosConfiguracion + 'credentials.json'
 tokenFile = pathArchivosConfiguracion + 'token.json'
-#nombreArchivo = 'C00N02_210611-065731-GPS_090.dat'
-#archivoSubir = direccionCarpeta + nombreArchivo
-# ID de la carpeta para almacenar los archivos en Drive
-# Esta ID se obtiene ingresando al Drive mediante el navegador y en la URL
-# https://drive.google.com/drive/u/1/folders/12S_kjBDl1wZALM1B0El892Oa-Il7kEXa
-#pathDriveID = '1LLSy9PkgP7CEUKfPYPjwWgp48V9i6NA3'
+
+carpetaDrive = sys.argv[1] #1:RC 2:EE 3:MS
+nombreArchivo = sys.argv[2]
+
+with open(archivoDatosConfiguracion) as ficheroConfiguracion:
+    lineasFicheroConfiguracion = ficheroConfiguracion.readlines()
+    nombreEstacion = lineasFicheroConfiguracion[0].rstrip('\n')
+    if carpetaDrive=='1':
+        #Archivos registro continuo
+        pathFile = lineasFicheroConfiguracion[2].rstrip('\n')
+        driveID = lineasFicheroConfiguracion[6].rstrip('\n')
+    elif carpetaDrive=='2':
+        #Archivos eventos extraidos
+        pathFile = lineasFicheroConfiguracion[4].rstrip('\n')
+        driveID = lineasFicheroConfiguracion[7].rstrip('\n')
+    elif carpetaDrive=='3':
+        #Archivos mseed
+        pathFile = lineasFicheroConfiguracion[5].rstrip('\n')
+        driveID = lineasFicheroConfiguracion[6].rstrip('\n')
+
+def construir_ruta_archivo(path_file, nombre_archivo):
+    if os.path.isabs(nombre_archivo):
+        # Si nombre_archivo contiene la ruta completa
+        return os.path.basename(nombre_archivo)
+    else:
+        # Si nombre_archivo solo contiene el nombre del archivo
+        return nombre_archivo
+    
+  
+nombreArchvioRegistroContinuo = construir_ruta_archivo(pathFile, nombreArchivo)
+pathArchivoRegistroContinuo = pathFile + nombreArchvioRegistroContinuo
+
+print(pathFile)
+print(driveID)  
+print(nombreArchvioRegistroContinuo)
+print(pathArchivoRegistroContinuo)
 
 # /////////////////////////////////////////////////////////////////////////////
 
@@ -81,8 +111,6 @@ def insert_file(service, name, description, parent_id, mime_type, filename):
     Returns:
         Inserted file metadata if successful, None otherwise.
     """
-    #media_body = MediaFileUpload(filename, mimetype = mime_type, resumable = False, chunksize=256 * 1024)
-    #media_body = MediaFileUpload(filename, mimetype = mime_type, resumable = False)
     media_body = MediaFileUpload(filename, mimetype = mime_type, chunksize=-1, resumable = True)
     body = {
         'name': name,
@@ -101,22 +129,9 @@ def insert_file(service, name, description, parent_id, mime_type, filename):
             body = body,
             media_body = media_body,
             fields='id').execute()
-        
-        #Prueba
-        # response = None
-        # while response is None:
-        #     status, response = file.next_chunk()
-        #     if status:
-        #         #logger.info('Uploaded {}%'.format(int(100*status.progress()))
-        #         print ("Uploaded %d%%." % int(status.progress() * 100))
-        #Fin prueba
-        
-        # Uncomment the following line to print the File ID
-        # print 'File ID: %s' % file['id']
-        
+            
         return file
-        #print "Upload Complete!"
-    
+            
     except errors.HttpError as error:
         print('An error occurred: %s' % error)
         return None
@@ -136,12 +151,12 @@ def Try_Autenticar_Drive(SCOPES):
         service = get_authenticated(SCOPES)
         isConecctedDrive = True
         print("Inicio Drive Ok")
-        #guardarDataInLogFile ("Inicio Drive Ok")
+        guardarDataInLogFile ("Inicio Drive Ok")
         return service
     except:
         isConecctedDrive = False
         print("********** Error Inicio Drive ********")
-        #guardarDataInLogFile ("Error Inicio Drive")
+        guardarDataInLogFile ("Error Inicio Drive")
         return 0
 # **********************************************************************
 # Fin del metodo para conectarse a Drive
@@ -151,16 +166,16 @@ def Try_Autenticar_Drive(SCOPES):
 # **********************************************************************
 # ****************** Metodo guardarDataInLogFile ***********************
 # **********************************************************************
-# def guardarDataInLogFile (info):
-#     global objLogFile
+def guardarDataInLogFile (info):
+    global objLogFile
 
-#     timeActual = datetime.now()
-#     timeFormato = timeActual.strftime('%Y-%m-%d %H:%M:%S')
+    timeActual = datetime.now()
+    timeFormato = timeActual.strftime('%Y-%m-%d %H:%M:%S')
 
-#     # Abre o crea el nuevo archivo de texto y en formato para escribir
-#     archivo = open(objLogFile, "a")
-#     archivo.write((timeFormato + "\t" + info + "\n"))
-#     archivo.close()
+    # Abre o crea el nuevo archivo de texto y en formato para escribir
+    archivo = open(objLogFile, "a")
+    archivo.write((timeFormato + "\t" + info + "\n"))
+    archivo.close()
 # **********************************************************************
 # *************** Fin Metodo guardarDataInLogFile **********************
 # **********************************************************************
@@ -168,9 +183,7 @@ def Try_Autenticar_Drive(SCOPES):
 # /////////////////////////////////////////////////////////////////////////////
 
 
-
 # ///////////////////////////////// Principal /////////////////////////////////
-
 if __name__ == '__main__':
     
     #service  = 0
@@ -185,19 +198,17 @@ if __name__ == '__main__':
     fechaFormato = fechaActual.strftime('%Y-%m-%d') 
              
     ficheroConfiguracion = open(archivoDatosConfiguracion)
-    #ficheroNombresArchivos = open(archivoNombresArchivosRC)
-    
+        
     lineasFicheroConfiguracion = ficheroConfiguracion.readlines()
-    #lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
-    
-    #nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
-    nombreArchvioRegistroContinuo = sys.argv[1]
+        
+    #nombreArchvioRegistroContinuo = sys.argv[1]
     print(nombreArchvioRegistroContinuo)
-    pathArchivoRegistroContinuo = lineasFicheroConfiguracion[4].rstrip('\n') + nombreArchvioRegistroContinuo
-    pathDriveID = lineasFicheroConfiguracion[7].rstrip('\n')
-    
+    #Subir evento extraido:
+    #Subir archivo registro continuo:
+    #pathArchivoRegistroContinuo = pathFile + nombreArchvioRegistroContinuo
+        
     # Crea el archivo para almacenar los logs del proyectos, que eventos ocurren
-    #objLogFile = pathLogFiles + 'Log' + lineasFicheroConfiguracion[0].rstrip('\n') + fechaFormato + '.txt'
+    objLogFile = pathLogFiles + 'Log' + nombreEstacion + fechaFormato + '.txt'
     # Llama al metodo para crear un nuevo archivo log
     #guardarDataInLogFile ("Inicio")
     
@@ -210,13 +221,12 @@ if __name__ == '__main__':
             # El metodo tiene este formato: insert_file(service, name, description, parent_id, mime_type, filename)
             #file_uploaded = insert_file(service, nombreArchivo, nombreArchivo, pathDriveID, 'text/x-script.txt', archivoSubir)
             print('Subiendo el archivo: %s' %pathArchivoRegistroContinuo)
-            #guardarDataInLogFile ("Subiendo el archivo: " + nombreArchvioRegistroContinuo)
-            #file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/x-script.txt', pathArchivoRegistroContinuo)
-            file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/plain', pathArchivoRegistroContinuo)
-            #guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
+            guardarDataInLogFile ("Subiendo el archivo: " + nombreArchvioRegistroContinuo)
+            file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, driveID, 'text/plain', pathArchivoRegistroContinuo)
+            guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
             print('Archivo ' + nombreArchvioRegistroContinuo + ' subido correctamente a Google Drive ' )
         except:
             # Llama al metodo para guardar el evento ocurrido en el archivo
-            #guardarDataInLogFile ("Error subiendo el archivo a Google Drive")
+            guardarDataInLogFile ("Error subiendo el archivo a Google Drive")
             print ('Error subiendo el archivo a Google Drive')
 # /////////////////////////////////////////////////////////////////////////////
