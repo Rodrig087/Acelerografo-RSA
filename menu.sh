@@ -10,7 +10,8 @@ show_menu() {
   echo "1. Instalar librerías"
   echo "2. Preparar el entorno"
   echo "3. Compilar scripts C"
-  echo "4. Salir"
+  echo "4. Actualizar"
+  echo "5. Salir"
   read -p "Ingrese el número de opción que desea ejecutar: " option
 }
 
@@ -53,6 +54,10 @@ while true; do
       sh setup-scripts/compilar.sh
       ;;
     4)
+      echo "Actualizando.."
+      sh setup-scripts/actualizar.sh
+      ;;
+    5)
       echo "Saliendo del programa..."
       echo "*****************************************************************"
       echo " "
