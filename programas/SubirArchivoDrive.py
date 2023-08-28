@@ -1,4 +1,3 @@
-
 from __future__ import print_function
 from googleapiclient import errors
 from googleapiclient.http import MediaFileUpload
@@ -225,6 +224,9 @@ if __name__ == '__main__':
             file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, driveID, 'text/plain', pathArchivoRegistroContinuo)
             guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
             print('Archivo ' + nombreArchvioRegistroContinuo + ' subido correctamente a Google Drive ' )
+            # Eliminar el archivo local después de subirlo a Google Drive
+            os.remove(pathArchivoRegistroContinuo)
+            print('Archivo local eliminado: %s' % pathArchivoRegistroContinuo)
         except:
             # Llama al metodo para guardar el evento ocurrido en el archivo
             guardarDataInLogFile ("Error subiendo el archivo a Google Drive")
