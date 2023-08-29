@@ -215,6 +215,7 @@ if __name__ == '__main__':
             file_uploaded = insert_file(service, nombreArchvioRegistroContinuo, nombreArchvioRegistroContinuo, pathDriveID, 'text/plain', pathArchivoRegistroContinuo)
             guardarDataInLogFile ("Archivo subido correctamente a Google Drive " + str(file_uploaded))
             print('Archivo' + nombreArchvioRegistroContinuo + ' subido correctamente a Google Drive ' )
+            
         except:
             # Llama al metodo para guardar el evento ocurrido en el archivo
             guardarDataInLogFile ("Error subiendo el archivo a Google Drive")

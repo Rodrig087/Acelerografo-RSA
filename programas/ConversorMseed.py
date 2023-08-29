@@ -2,6 +2,7 @@ import numpy as np
 import csv
 from obspy import UTCDateTime, read, Trace, Stream
 import subprocess
+import time
 
 # ///////////////////////////////// Archivos //////////////////////////////////
 
@@ -332,3 +333,5 @@ conversion_mseed_digital(n_mseed,fecha_,datos_np,segundos_faltantes)
 print(n_mseed)
 
 subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "3", n_mseed])
+time.sleep(5)
+subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "1", archivo_binario])
