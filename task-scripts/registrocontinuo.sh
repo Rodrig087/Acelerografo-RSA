@@ -8,7 +8,7 @@ case "$1" in
     sudo /home/rsa/ejecutables/acelerografo &
     #sleep 5
     #sudo python3 /home/rsa/ejecutables/SubirRegistroDrive.py &
-    sleep 5
+    sleep 70
     sudo python3 /home/rsa/ejecutables/ConversorMseed.py &
     ;;
   stop)

@@ -499,35 +499,54 @@ void NuevoCiclo()
 // C:0xA4	F:0xF4
 void EnviarTiempoLocal()
 {
-    // Obtiene la hora y la fecha del sistema:
-    printf("Enviando tiempo local: ");
     time_t t;
     struct tm *tm;
-    t = time(NULL);
-    tm = localtime(&t);
-    tiempoLocal[0] = tm->tm_year - 100; // Anio (contado desde 1900)
-    tiempoLocal[1] = tm->tm_mon + 1;    // Mes desde Enero (0-11)
-    tiempoLocal[2] = tm->tm_mday;       // Dia del mes (0-31)
-    tiempoLocal[3] = tm->tm_hour;       // Hora
-    tiempoLocal[4] = tm->tm_min;        // Minuto
-    tiempoLocal[5] = tm->tm_sec;        // Segundo
-    printf("%0.2d:", tiempoLocal[3]);   // hh
-    printf("%0.2d:", tiempoLocal[4]);   // mm
-    printf("%0.2d ", tiempoLocal[5]);   // ss
-    printf("%0.2d/", tiempoLocal[0]);   // AA
-    printf("%0.2d/", tiempoLocal[1]);   // MM
-    printf("%0.2d\n", tiempoLocal[2]);  // DD
-    printf("****************************************\n");
+    int ban_segundo_inicio = 0;
 
-    bcm2835_spi_transfer(0xA4); // Envia el delimitador de inicio de trama
-    bcm2835_delayMicroseconds(TIEMPO_SPI);
-    for (i = 0; i < 6; i++)
+    // Espera en el bucle hasta que el segundo actual sea 0
+    while (ban_segundo_inicio == 0)
     {
-        bcm2835_spi_transfer(tiempoLocal[i]); // Envia los 6 datos de la trama tiempoLocal al dsPIC
-        bcm2835_delayMicroseconds(TIEMPO_SPI);
+
+        // Obtiene la hora y la fecha del sistema:
+        time(&t);
+        tm = localtime(&t);
+        int segundo_actual = tm->tm_sec;
+        printf("Esperando segundo cero...\n");
+
+        if (segundo_actual == 0)
+        {
+            printf("Enviando tiempo local: ");
+            tiempoLocal[0] = tm->tm_year - 100; // Anio (contado desde 1900)
+            tiempoLocal[1] = tm->tm_mon + 1;    // Mes desde Enero (0-11)
+            tiempoLocal[2] = tm->tm_mday;       // Dia del mes (0-31)
+            tiempoLocal[3] = tm->tm_hour;       // Hora
+            tiempoLocal[4] = tm->tm_min;        // Minuto
+            tiempoLocal[5] = segundo_actual;    // Segundo
+            printf("%0.2d:", tiempoLocal[3]);   // hh
+            printf("%0.2d:", tiempoLocal[4]);   // mm
+            printf("%0.2d ", tiempoLocal[5]);   // ss
+            printf("%0.2d/", tiempoLocal[0]);   // AA
+            printf("%0.2d/", tiempoLocal[1]);   // MM
+            printf("%0.2d\n", tiempoLocal[2]);  // DD
+            printf("****************************************\n");
+
+            // Envia la trama de tiempo a través de SPI
+            bcm2835_spi_transfer(0xA4); // Envia el delimitador de inicio de trama
+            bcm2835_delayMicroseconds(TIEMPO_SPI);
+            for (int i = 0; i < 6; i++)
+            {
+                bcm2835_spi_transfer(tiempoLocal[i]); // Envia los 6 datos de la trama tiempoLocal al dsPIC
+                bcm2835_delayMicroseconds(TIEMPO_SPI);
+            }
+            bcm2835_spi_transfer(0xF4); // Envia el delimitador de final de trama
+            bcm2835_delayMicroseconds(TIEMPO_SPI);
+
+            ban_segundo_inicio = 1; // Actualiza la bandera para salir del bucle
+        }
+
+        // Espera 10000us (10ms) antes de verificar nuevamente
+        bcm2835_delayMicroseconds(10000);
     }
-    bcm2835_spi_transfer(0xF4); // Envia el delimitador de final de trama
-    bcm2835_delayMicroseconds(TIEMPO_SPI);
 }
 
 // C:0xA5	F:0xF5
