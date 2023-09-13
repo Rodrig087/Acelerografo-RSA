@@ -502,6 +502,7 @@ void EnviarTiempoLocal()
     time_t t;
     struct tm *tm;
     int ban_segundo_inicio = 0;
+    printf("Esperando segundo cero...\n");
 
     // Espera en el bucle hasta que el segundo actual sea 0
     while (ban_segundo_inicio == 0)
@@ -511,7 +512,6 @@ void EnviarTiempoLocal()
         time(&t);
         tm = localtime(&t);
         int segundo_actual = tm->tm_sec;
-        printf("Esperando segundo cero...\n");
 
         if (segundo_actual == 0)
         {
@@ -544,8 +544,8 @@ void EnviarTiempoLocal()
             ban_segundo_inicio = 1; // Actualiza la bandera para salir del bucle
         }
 
-        // Espera 10000us (10ms) antes de verificar nuevamente
-        bcm2835_delayMicroseconds(10000);
+        // Espera 1000us (1ms) antes de verificar nuevamente
+        bcm2835_delayMicroseconds(1000);
     }
 }
 
