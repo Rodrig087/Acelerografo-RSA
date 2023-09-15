@@ -163,6 +163,7 @@ char calcularIsEvento(float resul_STA_LTA);
 void firFloatInit(void);
 float calcular_Salida_Filtro(double *coeficientes, double valEntrada, int filterLength);
 void ExtraerEvento(char *nombreArchivoRegistro, unsigned int tiempoEvento, unsigned int duracionEvento);
+int LeerFuenteReloj();
 
 int main(void)
 {
@@ -188,31 +189,20 @@ int main(void)
     // Comprueba si el equipo esta sincronizado con el tiempo de red:
     banTiempoRed = ComprobarNTP();
 
-    // Obtencion de fuente de reloj | 0:RPi 1:GPS 2:RTC
-    fuenteTiempo = 0;
-    ObtenerReferenciaTiempo(fuenteTiempo);
-    /*
-    if (fuenteTiempo == 1)
+    // Obtiene la fuente de reloj del archivo de configuracion | 0:RPi 1:GPS 2:RTC
+    fuenteTiempo = LeerFuenteReloj();
+    if (fuenteTiempo == 0 || fuenteTiempo == 1 || fuenteTiempo == 2)
     {
         ObtenerReferenciaTiempo(fuenteTiempo);
     }
     else
     {
-        if (banTiempoRed == 1)
-        {
-            ObtenerReferenciaTiempo(0);
-        }
-        else
-        {
-            ObtenerReferenciaTiempo(2);
-        }
+        fprintf(stderr, "Error: No se pudo recuperar la fuente de reloj. Revise el archivo de configuracion.\n");
+        ObtenerReferenciaTiempo(0);
     }
-    */
 
     // Llama al metodo para inicializar el filtro FIR
     firFloatInit();
-
-    // sleep(5);
 
     while (1)
     {
@@ -308,6 +298,52 @@ int ComprobarNTP()
         return 2;
         printf("****************************************\n");
     }
+}
+
+int LeerFuenteReloj()
+{
+
+    int fuenteReloj = -1; // Valor predeterminado en caso de error
+    char linea[100];
+    char ultimaLinea[100];
+    int contadorLineas = 0; // Para rastrear el número de líneas leídas
+
+    // Se leen los datos de configuracion:
+    printf("Leyendo fuente de reloj...\n");
+    // Abre el fichero de datos de configuracion:
+    ficheroDatosConfiguracion = fopen("/home/rsa/configuracion/DatosConfiguracion.txt", "r");
+
+    if (ficheroDatosConfiguracion == NULL)
+    {
+        perror("Error al abrir el archivo de configuración");
+        exit(EXIT_FAILURE);
+    }
+
+    while (fgets(linea, sizeof(linea), ficheroDatosConfiguracion) != NULL)
+    {
+        contadorLineas++;
+        // Verifica si es la novena línea (verificar archivo de configuracion)
+        if (contadorLineas == 9)
+        {
+            // Copia la línea en 'ultimaLinea'
+            strcpy(ultimaLinea, linea);
+            // Convierte la línea en un entero
+            if (sscanf(ultimaLinea, "%d", &fuenteReloj) != 1)
+            {
+                fprintf(stderr, "Error al convertir la fuente de reloj a entero.\n");
+            }
+            break; // Sale del bucle después de leer la novena línea
+        }
+    }
+
+    // Verifica si se encontró al menos una línea
+    if (contadorLineas < 9)
+    {
+        fprintf(stderr, "El archivo de configuración no tiene suficientes líneas.\n");
+    }
+
+    fclose(ficheroDatosConfiguracion);
+    return fuenteReloj;
 }
 
 void CrearArchivos()
@@ -501,8 +537,10 @@ void EnviarTiempoLocal()
 {
     time_t t;
     struct tm *tm;
-    int ban_segundo_inicio = 0;
-    printf("Esperando segundo cero...\n");
+    int ban_segundo_inicio = 0; // Bandera para controlar el bucle
+    int segundo_anterior = -1;  // Inicializa para detectar el cambio de segundos
+
+    printf("Esperando inicio de segundo...\n");
 
     // Espera en el bucle hasta que el segundo actual sea 0
     while (ban_segundo_inicio == 0)
@@ -513,7 +551,8 @@ void EnviarTiempoLocal()
         tm = localtime(&t);
         int segundo_actual = tm->tm_sec;
 
-        if (segundo_actual == 0)
+        // Envía la trama de tiempo al detectarse un cambio de segundo
+        if (segundo_actual == 0 || (segundo_actual % 2 == 0))
         {
             printf("Enviando tiempo local: ");
             tiempoLocal[0] = tm->tm_year - 100; // Anio (contado desde 1900)
