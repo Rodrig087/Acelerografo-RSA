@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	RecuperarVector();
 
 	// Comando para ejecutar el script de Python
-	const char *comandoPython = "sudo python3 /home/rsa/programas/ConversorMseed.py 2";
+	const char *comandoPython = "sudo python3 /home/rsa/ejecutables/ConversorMseed.py 2";
 	system(comandoPython);
 
 	return 0;
