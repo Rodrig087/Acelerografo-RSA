@@ -3,23 +3,34 @@ import csv
 from obspy import UTCDateTime, read, Trace, Stream
 import subprocess
 import time
+import sys
+
+# //////////////////////////////// Parametros //////////////////////////////////
+tipoArchivo = sys.argv[1] #1:RC 2:EE 
+# /////////////////////////////////////////////////////////////////////////////
 
 # ///////////////////////////////// Archivos //////////////////////////////////
-
 archivoConfiguracionMseed = '/home/rsa/configuracion/configuracion_mseed.csv'
 archivoNombresArchivosRC = '/home/rsa/tmp/NombreArchivoRegistroContinuo.tmp'
 archivoDatosConfiguracion = '/home/rsa/configuracion/DatosConfiguracion.txt'
+archivoNombresArchivosEE = '/home/rsa/tmp/NombreArchivoEventoExtraido.tmp'
 
-ficheroConfiguracion = open(archivoDatosConfiguracion)
-ficheroNombresArchivos = open(archivoNombresArchivosRC)
-    
-lineasFicheroConfiguracion = ficheroConfiguracion.readlines()
-lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
-    
-nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
-print(nombreArchvioRegistroContinuo)
-archivo_binario = lineasFicheroConfiguracion[2].rstrip('\n') + nombreArchvioRegistroContinuo
-print(archivo_binario)
+if tipoArchivo=='1':
+    #Archivos registro continuo
+    ficheroConfiguracion = open(archivoDatosConfiguracion)
+    ficheroNombresArchivos = open(archivoNombresArchivosRC)
+    lineasFicheroConfiguracion = ficheroConfiguracion.readlines()
+    lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
+    nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
+    archivo_binario = lineasFicheroConfiguracion[2].rstrip('\n') + nombreArchvioRegistroContinuo
+    print('Convirtiendo el archivo: %s' %archivo_binario)
+elif tipoArchivo=='2':
+    #Archivos eventos extraidos
+    ficheroNombresArchivos = open(archivoNombresArchivosEE)
+    lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
+    archivo_binario = lineasFicheroNombresArchivos[0]
+    print('Convirtiendo el archivo: %s' %archivo_binario)
+
 
 # /////////////////////////////////////////////////////////////////////////////
 
@@ -85,71 +96,6 @@ def parametros_():
                filtro_,             #Canal 22 'FILTRO' 
                reserva_1,           #Canal 22 'Reserva 1'            
                reserva_2)           #Canal 22 'Reserva 2'
-
-'''
-def obtenerTraza(nombreCanal,num_canal, data, anio, mes, dia, horas, minutos, segundos, microsegundos):#Depurado
-    # Define todas las caracteristicas de la traza
-    parametros=parametros_()
-    nombreRed=parametros[19]
-    nombreEstacion=parametros[1]
-    tipoEstacion=parametros[2]
-    localizacion=parametros[17]
-    nCanal=parametros[18]
-    fsample=int(parametros[20])
-    calidad=parametros[16]
-    if fsample>80:
-        nombreCanal='E'
-    else:
-        nombreCanal='S'
-    if tipoEstacion=='SISMICO':
-        nombreCanal=nombreCanal+'L'
-    else:
-        nombreCanal=nombreCanal+'N'
-    num_canal=num_canal-3*(int((num_canal-1)/3))
-    nombreCanal=nombreCanal+nCanal[num_canal-1:num_canal]
-    stats = {'network': nombreRed, 'station': nombreEstacion, 'location': localizacion,
-             'channel': nombreCanal, 'npts': len(data), 'sampling_rate': fsample,
-             'mseed': {'dataquality': calidad}}
-    # Establece el tiempo
-    stats['starttime'] = UTCDateTime(anio, mes, dia, horas, minutos, segundos, microsegundos)    
-    # Crea la traza con los datos las caracteristicas
-    traza = Trace(data = data, header = stats)
-    return traza
-'''
-'''
-def lectura_archivo(archivo): #archivo 
-    datos=[[],[],[]]
-    bandera =1
-    contador=0
-    avance=0
-    f = open(archivo, "rb")
-    while bandera:
-        tramaDatos = np.fromfile(f, np.int8, 2506)
-        contador=contador+1
-        if(len(tramaDatos)==2506):
-            hora = tramaDatos[2503]
-            minuto = tramaDatos[2504]
-            segundo = tramaDatos[2505]
-            n_segundo=hora*3600+minuto*60+segundo
-        else:
-            bandera=0
-            break
-        if(contador==864):
-            contador=0
-        for j in range(0,3):
-            for i in range(0,250):
-                dato_1=tramaDatos[i*10+j*3+1]
-                dato_2=tramaDatos[i*10+j*3+2]
-                dato_3=tramaDatos[i*10+j*3+3]
-                xValue = ((dato_1 << 12) & 0xFF000) + ((dato_2 << 4) & 0xFF0) + ((dato_3 >> 4) & 0xF)
-                if (xValue  >= 0x80000):
-                    xValue  = xValue & 0x7FFFF  #Se descarta el bit 20 que indica el signo (1=negativo)
-                    xValue = -1 * (((~xValue) + 1) & 0x7FFFF)
-                datos[j].append(int(xValue))
-    f.close
-    datos_np = np.asarray(datos)        
-    return (datos_np)  
-'''
 
 
 def obtenerTraza(nombreCanal,num_canal, data, anio, mes, dia, horas, minutos, segundos, microsegundos, segundos_faltantes=None):
@@ -283,7 +229,7 @@ def verificacion_archivo(archivo):
     return(fecha_)
 
 
-def nombre_mseed(nombre_,fecha_):
+def nombre_mseed(tipoArchivo,nombre_,fecha_):
     anio_s=fecha_[1][0]
     mes_s=fecha_[1][1]
     dia_s=fecha_[1][2]
@@ -292,7 +238,12 @@ def nombre_mseed(nombre_,fecha_):
     segundo_s=fecha_[1][5]
     fecha_string=anio_s+mes_s+dia_s        
     hora_string=hora_s+minuto_s+segundo_s
-    fileName = '/home/rsa/resultados/mseed/'+nombre_+fecha_string+"_"+hora_string+".mseed" 
+    if tipoArchivo=='1':
+        #Archivos registro continuo
+        fileName = '/home/rsa/resultados/mseed/'+nombre_+fecha_string+"_"+hora_string+".mseed" 
+    elif tipoArchivo=='2':
+        #Archivos eventos extraidos
+        fileName = '/home/rsa/resultados/eventos-extraidos/'+nombre_+fecha_string+"_"+hora_string+".mseed" 
     return fileName
     
     
@@ -326,12 +277,16 @@ parametros=parametros_()
 nombre=parametros[1]
 fecha_=verificacion_archivo(archivo_binario)
 nombre_= parametros[1]+'_20'
-n_mseed=nombre_mseed(nombre_,fecha_)
+n_mseed=nombre_mseed(tipoArchivo,nombre_,fecha_)
 datos_np, segundos_faltantes = lectura_archivo(archivo_binario)
 conversion_mseed_digital(n_mseed,fecha_,datos_np,segundos_faltantes)
 
-print(n_mseed)
+print('Se ha creado el archivo: %s' %n_mseed)
 
-subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "3", n_mseed])
-time.sleep(5)
-subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "1", archivo_binario])
+# Sube los archivos convertidos a Drive
+if tipoArchivo=='1':
+    subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "3", n_mseed])
+    time.sleep(5)
+    subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "1", archivo_binario])
+elif tipoArchivo=='2':
+    subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "2", n_mseed])

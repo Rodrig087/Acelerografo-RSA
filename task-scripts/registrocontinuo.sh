@@ -9,7 +9,7 @@ case "$1" in
     #sleep 5
     #sudo python3 /home/rsa/ejecutables/SubirRegistroDrive.py &
     sleep 70
-    sudo python3 /home/rsa/ejecutables/ConversorMseed.py &
+    sudo python3 /home/rsa/ejecutables/ConversorMseed.py 1 &
     ;;
   stop)
     echo "Deteniendo sistema de registro continuo..."
