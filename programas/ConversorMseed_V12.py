@@ -148,55 +148,53 @@ def obtenerTraza(nombreCanal,num_canal, data, anio, mes, dia, horas, minutos, se
     
     return traza
 
+def lectura_archivo(archivo):
+    datos = [[], [], []]
+    contador = 0
+    segundo_anterior = None
+    segundos_faltantes = []
 
-def lectura_archivo(archivo): #archivo 
-    datos=[[],[],[]]
-    bandera =1
-    contador=0
-    avance=0
-    
-    segundo_anterior = None  # Para almacenar el segundo anterior
-    segundos_faltantes = []  # Para almacenar los segundos faltantes
-    
-    f = open(archivo, "rb")
-    while bandera:
-        tramaDatos = np.fromfile(f, np.int8, 2506)
-        contador=contador+1
-        if(len(tramaDatos)==2506):
+    with open(archivo, "rb") as f:
+        while True:
+            tramaDatos = np.fromfile(f, np.int8, 2506)
+            if len(tramaDatos) != 2506:
+                break
+            
             hora = tramaDatos[2503]
             minuto = tramaDatos[2504]
             segundo = tramaDatos[2505]
-            n_segundo=hora*3600+minuto*60+segundo
+            n_segundo = hora * 3600 + minuto * 60 + segundo
             
-            if segundo_anterior is not None and n_segundo != segundo_anterior + 1:
-                segundos_faltantes = list(range(segundo_anterior + 1, n_segundo))
-                #print(f"Se saltaron los segundos: {segundos_faltantes}")
+            if segundo_anterior is not None:
+                if n_segundo != segundo_anterior + 1:
+                    segundos_faltantes.extend(range(segundo_anterior + 1, n_segundo))
+                elif n_segundo > segundo_anterior + 1:
+                    # Si hay un salto mayor, se llenan los segundos faltantes intermedios
+                    segundos_faltantes.extend(range(segundo_anterior + 1, n_segundo))
             
             segundo_anterior = n_segundo
             
-        else:
-            bandera=0
-            break
-        if(contador==864):
-            contador=0
-        for j in range(0,3):
-            for i in range(0,250):
-                dato_1=tramaDatos[i*10+j*3+1]
-                dato_2=tramaDatos[i*10+j*3+2]
-                dato_3=tramaDatos[i*10+j*3+3]
-                xValue = ((dato_1 << 12) & 0xFF000) + ((dato_2 << 4) & 0xFF0) + ((dato_3 >> 4) & 0xF)
-                if (xValue  >= 0x80000):
-                    xValue  = xValue & 0x7FFFF  #Se descarta el bit 20 que indica el signo (1=negativo)
-                    xValue = -1 * (((~xValue) + 1) & 0x7FFFF)
-                datos[j].append(int(xValue))
-    f.close
-    datos_np = np.asarray(datos)    
+            for j in range(0, 3):
+                for i in range(0, 250):
+                    dato_1 = tramaDatos[i * 10 + j * 3 + 1]
+                    dato_2 = tramaDatos[i * 10 + j * 3 + 2]
+                    dato_3 = tramaDatos[i * 10 + j * 3 + 3]
+                    xValue = ((dato_1 << 12) & 0xFF000) + ((dato_2 << 4) & 0xFF0) + ((dato_3 >> 4) & 0xF)
+                    if (xValue >= 0x80000):
+                        xValue = xValue & 0x7FFFF
+                        xValue = -1 * (((~xValue) + 1) & 0x7FFFF)
+                    datos[j].append(int(xValue))
+
+            contador += 1
+            if contador == 864:
+                contador = 0
+
+    datos_np = np.asarray(datos)
 
     if segundos_faltantes:
         print("Segundos faltantes:", segundos_faltantes)
-    
-    return datos_np, segundos_faltantes if segundos_faltantes else None
 
+    return datos_np, segundos_faltantes if segundos_faltantes else None
 
 def verificacion_archivo(archivo):
     f = open(archivo, "rb")
