@@ -26,11 +26,13 @@ cp /home/rsa/Acelerografo-RSA/programas/ConversorMseed*.py /home/rsa/ejecutables
 cp /home/rsa/Acelerografo-RSA/programas/LimpiarArchivosRegistro*.py /home/rsa/ejecutables/LimpiarArchivosRegistro.py
 
 # Copia los task-scripts al directorio /usr/local/bin
-sudo cp task-scripts/comprobar.sh /usr/local/bin/comprobar
+sudo cp task-scripts/ayuda.sh /usr/local/bin/ayuda
 sudo cp task-scripts/informacion.sh /usr/local/bin/informacion 
+sudo cp task-scripts/comprobar.sh /usr/local/bin/comprobar
 sudo cp task-scripts/registrocontinuo.sh /usr/local/bin/registrocontinuo
 
 # Conceder permisos de ejecucion a los task-scripts
-sudo chmod +x /usr/local/bin/comprobar
+sudo cp task-scripts/ayuda.sh /usr/local/bin/ayuda
 sudo chmod +x /usr/local/bin/informacion
+sudo chmod +x /usr/local/bin/comprobar
 sudo chmod +x /usr/local/bin/registrocontinuo
