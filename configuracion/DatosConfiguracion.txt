@@ -4,4 +4,7 @@ NOM00_
 /home/rsa/resultados/eventos-detectados/
 /home/rsa/resultados/eventos-extraidos/
 /home/rsa/resultados/consumo/
+token_registro-continuo
+token_eventos-extraidos
+0
 
