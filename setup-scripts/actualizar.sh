@@ -8,6 +8,7 @@ cp /home/rsa/Acelerografo-RSA/programas/SubirDirectorioDrive*.py /home/rsa/ejecu
 cp /home/rsa/Acelerografo-RSA/programas/SubirArchivoDrive*.py /home/rsa/ejecutables/SubirArchivoDrive.py
 cp /home/rsa/Acelerografo-RSA/programas/ConversorMseed*.py /home/rsa/ejecutables/ConversorMseed.py
 cp /home/rsa/Acelerografo-RSA/programas/LimpiarArchivosRegistro*.py /home/rsa/ejecutables/LimpiarArchivosRegistro.py
+cp /home/rsa/Acelerografo-RSA/programas/PublicarEventoMQTT.py /home/rsa/ejecutables/PublicarEventoMQTT.py
 
 # Copia los task-scripts al directorio /usr/local/bin
 sudo cp task-scripts/comprobar.sh /usr/local/bin/comprobar
