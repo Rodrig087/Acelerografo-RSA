@@ -4,13 +4,9 @@ import os
 import datetime
 import subprocess
 
-# Definir las variables
-server_address = "www.servidor.com"
-username = "usuario"
-password = "contraseña"
-topic = "evento"
+path = '/home/rsa/configuracion'
 
-
+############################################ ~FUNCIONES~ ############################################
 
 # Definir la funcion para buscar el archivo del registro continuo que contiene el dato solicitado
 def BuscarArchivoRegistro(fecha_str):
@@ -91,12 +87,11 @@ def BuscarArchivoRegistro(fecha_str):
         print(nombre_archivo_extraido)
 
         # Subir archivo extraido a Drive:
-        comandoPython = ["sudo", "python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", nombre_archivo_extraido]
+        comandoPython = ["sudo", "python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "2", nombre_archivo_extraido]
         # resultado = subprocess.run(comandoPython, capture_output=True, text=True)
         # print(resultado.stdout)
         subprocess.run(comandoPython)
   
-
 # Definir la función para extraer la fecha, hora y duración del payload JSON
 def procesar_mensaje(mensaje):
     payload = json.loads(mensaje.payload)
@@ -125,6 +120,21 @@ def on_message(client, userdata, msg):
 def publicar_mensaje(client, topic, mensaje):
     client.publish(topic, mensaje)
 
+def read_json(path_base):
+    with open(path_base,"r") as condig_file:
+        config = json.load(condig_file)
+    return config
+#####################################################################################################
+
+######################################### ~PARAMETROS MQTT~ #########################################
+mqtt_config = read_json(path+'/mqtt-configuracion.json')
+server_address = mqtt_config["server_address"]
+username = mqtt_config["username"]
+password = mqtt_config["password"]
+topic = mqtt_config["topicSuscription"]
+#####################################################################################################
+
+############################################### ~MAIN~ ##############################################
 # Crear una instancia del cliente MQTTc
 client = mqtt.Client()
 
@@ -138,3 +148,4 @@ client.connect(server_address, 1883, 60)
 
 # Iniciar el loop para mantener la conexión y recibir mensajes
 client.loop_forever()
+#####################################################################################################
