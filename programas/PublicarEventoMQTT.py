@@ -50,7 +50,7 @@ mqtt_config = read_json(path+'/mqtt-configuracion.json')
 server_address = mqtt_config["server_address"]
 username = mqtt_config["username"]
 password = mqtt_config["password"]
-topic = "registrocontinuo/eventos"
+topic = mqtt_config["topicPublish"]
 #####################################################################################################
 
 datos_config = read_json(path+'/DatosConfiguracion.json')
