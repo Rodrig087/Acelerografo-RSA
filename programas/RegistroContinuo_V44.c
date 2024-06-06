@@ -1,4 +1,14 @@
-
+// Compilar:
+// gcc -o /home/rsa/ejecutables/acelerografo /home/rsa/desarrollo/RegistroContinuo_*.c \
+-I/home/rsa/librerias/lector-json \
+-I/home/rsa/librerias/detector-eventos \
+-L/home/rsa/librerias/lector-json \
+-L/home/rsa/librerias/detector-eventos \
+-llector_json -ldetector_eventos \
+-Wl,-rpath,/home/rsa/librerias/lector-json \
+-Wl,-rpath,/home/rsa/librerias/detector-eventos \
+-lbcm2835 -lwiringPi -lm -ljansson
+//
 
 // Para manejo del tiempo
 #define _XOPEN_SOURCE // Debe ir en la primera linea
@@ -12,8 +22,10 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-// Para operaciones en la deteccion de eventos
-#include "eventos.h"
+
+// Incluye las librerias de deteccion de eventos y de lectura del archivo json
+#include "lector_json.h"
+#include "detector_eventos.h"
 
 // Declaracion de constantes
 #define P2 2
@@ -65,10 +77,12 @@ struct tm datePIC;
 long tiempoPicUNIX, tiempoRedUNIX, deltaUNIX;
 
 // Variables para extraer los datos de configuracion:
-char idEstacion[10];
-char pathRegistroContinuo[60];
-char pathEventosDetectados[60];
-char pathTMP[60];
+char id[10];
+char deteccion_eventos[10];
+char registro_continuo[60];
+char eventos_detectados[60];
+char archivos_temporales[60];
+
 char extBin[5];
 char extTxt[5];
 char extTmp[5];
@@ -89,7 +103,6 @@ FILE *obj_fp;
 
 // Metodo para manejar el tiempo del sistema
 int ComprobarNTP();
-int LeerFuenteReloj();
 
 // Metodos para la comunicacion con el dsPIC
 int ConfiguracionPrincipal();
@@ -105,7 +118,8 @@ void ObtenerTiempoPIC();                      // C:0xA5	F:0xF5
 void ObtenerReferenciaTiempo(int referencia); // C:0xA6	F:0xF6
 void SetRelojLocal(unsigned char *tramaTiempo);
 
-// #include "eventos.h"
+// Declaración global
+struct datos_config *datos_configuracion;
 
 int main(void)
 {
@@ -131,21 +145,51 @@ int main(void)
     // Comprueba si el equipo esta sincronizado con el tiempo de red:
     banTiempoRed = ComprobarNTP();
 
-    // Obtiene la fuente de reloj del archivo de configuracion | 0:RPi 1:GPS 2:RTC
-    fuenteTiempo = LeerFuenteReloj();
-    if (fuenteTiempo == 0 || fuenteTiempo == 1 || fuenteTiempo == 2)
+    // Lee el archivo de configuracion en formato json
+    const char *filename = "/home/rsa/configuracion/configuracion_dispositivo.json";
+    struct datos_config *datos_configuracion = compilar_json(filename);
+
+    if (datos_configuracion != NULL)
     {
-        ObtenerReferenciaTiempo(fuenteTiempo);
+        printf("ID: %s\n", datos_configuracion->id);
+        printf("Fuente de reloj: %s\n", datos_configuracion->fuente_reloj);
+        printf("Deteccion de eventos: %s\n", datos_configuracion->deteccion_eventos);
+        printf("Path archivos temporales: %s\n", datos_configuracion->archivos_temporales);
+        printf("Path archivos registro continuo: %s\n", datos_configuracion->registro_continuo);
+        printf("Path eventos detectados: %s\n", datos_configuracion->eventos_detectados);
+
+        int fuente_reloj = atoi(datos_configuracion->fuente_reloj);     
+
+        // Asignar el valor a la variable global
+        strncpy(deteccion_eventos, datos_configuracion->deteccion_eventos, sizeof(deteccion_eventos) - 1);
+        deteccion_eventos[sizeof(deteccion_eventos) - 1] = '\0'; // Asegurar la terminación nula
+
+        // Obtiene la referencia de tiempo | 0:RPi 1:GPS 2:RTC
+        if (fuente_reloj == 0 || fuente_reloj == 1 || fuente_reloj == 2)
+        {
+            ObtenerReferenciaTiempo(fuente_reloj);
+        }
+        else
+        {
+            fprintf(stderr, "Error: No se pudo recuperar la fuente de reloj. Revise el archivo de configuracion.\n");
+            ObtenerReferenciaTiempo(0);
+        }
+
+        // Comprueba que la deteccion de eventos este habilitada en el archivo jason para lamar al metodo de inicializacion del filtro FIR
+        
+        if (strcmp(deteccion_eventos, "si") == 0){
+            firFloatInit();
+        } 
+        
+
+        free(datos_configuracion);
+
     }
     else
     {
-        fprintf(stderr, "Error: No se pudo recuperar la fuente de reloj. Revise el archivo de configuracion.\n");
-        ObtenerReferenciaTiempo(0);
+        fprintf(stderr, "Error: No se pudo leer el archivo de configuracion.\n");
     }
 
-    // OJO: Puede servir para probar la libreria
-    // Llama al metodo para inicializar el filtro FIR
-    firFloatInit();
 
     while (1)
     {
@@ -243,51 +287,6 @@ int ComprobarNTP()
     }
 }
 
-int LeerFuenteReloj()
-{
-
-    int fuenteReloj = -1; // Valor predeterminado en caso de error
-    char linea[100];
-    char ultimaLinea[100];
-    int contadorLineas = 0; // Para rastrear el número de líneas leídas
-
-    // Se leen los datos de configuracion:
-    printf("Leyendo fuente de reloj...\n");
-    // Abre el fichero de datos de configuracion:
-    ficheroDatosConfiguracion = fopen("/home/rsa/configuracion/DatosConfiguracion.txt", "r");
-
-    if (ficheroDatosConfiguracion == NULL)
-    {
-        perror("Error al abrir el archivo de configuración");
-        exit(EXIT_FAILURE);
-    }
-
-    while (fgets(linea, sizeof(linea), ficheroDatosConfiguracion) != NULL)
-    {
-        contadorLineas++;
-        // Verifica si es la novena línea (verificar archivo de configuracion)
-        if (contadorLineas == 9)
-        {
-            // Copia la línea en 'ultimaLinea'
-            strcpy(ultimaLinea, linea);
-            // Convierte la línea en un entero
-            if (sscanf(ultimaLinea, "%d", &fuenteReloj) != 1)
-            {
-                fprintf(stderr, "Error al convertir la fuente de reloj a entero.\n");
-            }
-            break; // Sale del bucle después de leer la novena línea
-        }
-    }
-
-    // Verifica si se encontró al menos una línea
-    if (contadorLineas < 9)
-    {
-        fprintf(stderr, "El archivo de configuración no tiene suficientes líneas.\n");
-    }
-
-    fclose(ficheroDatosConfiguracion);
-    return fuenteReloj;
-}
 
 void CrearArchivos()
 {
@@ -297,24 +296,24 @@ void CrearArchivos()
     // Abre el fichero de datos de configuracion:
     ficheroDatosConfiguracion = fopen("/home/rsa/configuracion/DatosConfiguracion.txt", "r");
     // Recupera el contenido del archivo en la variable arg1 hasta que encuentra el carácter de fin de línea (\n):
-    // fgets(idEstacion, 10, ficheroDatosConfiguracion); //La funcion fgets lee el archivo linea por linea, esta parte es necesaria para saltar el encabezado del archivo
-    fgets(idEstacion, 10, ficheroDatosConfiguracion);
-    fgets(pathTMP, 60, ficheroDatosConfiguracion);
-    fgets(pathRegistroContinuo, 60, ficheroDatosConfiguracion);
-    fgets(pathEventosDetectados, 60, ficheroDatosConfiguracion);
+    // fgets(id, 10, ficheroDatosConfiguracion); //La funcion fgets lee el archivo linea por linea, esta parte es necesaria para saltar el encabezado del archivo
+    fgets(id, 10, ficheroDatosConfiguracion);
+    fgets(archivos_temporales, 60, ficheroDatosConfiguracion);
+    fgets(registro_continuo, 60, ficheroDatosConfiguracion);
+    fgets(eventos_detectados, 60, ficheroDatosConfiguracion);
     // Cierra el fichero de informacion:
     fclose(ficheroDatosConfiguracion);
 
     // Elimina el caracter de fin de linea (\n):
-    strtok(idEstacion, "\n");
-    strtok(pathRegistroContinuo, "\n");
-    strtok(pathEventosDetectados, "\n");
-    strtok(pathTMP, "\n");
+    strtok(id, "\n");
+    strtok(registro_continuo, "\n");
+    strtok(eventos_detectados, "\n");
+    strtok(archivos_temporales, "\n");
     // Elimina el caracter de retorno de carro (\r):
-    strtok(idEstacion, "\r");
-    strtok(pathRegistroContinuo, "\r");
-    strtok(pathEventosDetectados, "\r");
-    strtok(pathTMP, "\r");
+    strtok(id, "\r");
+    strtok(registro_continuo, "\r");
+    strtok(eventos_detectados, "\r");
+    strtok(archivos_temporales, "\r");
 
     // Asigna el texto correspondiente a los array de carateres:
     strcpy(extBin, ".dat");
@@ -335,8 +334,8 @@ void CrearArchivos()
     // Establece la fecha y hora actual como nombre que tendra el archivo binario
     strftime(archivoRegistroContinuo, 20, "%y%m%d-%H%M%S", tm);
     // Realiza la concatenacion de array de caracteres
-    strcat(filenameArchivoRegistroContinuo, pathRegistroContinuo);
-    strcat(filenameArchivoRegistroContinuo, idEstacion);
+    strcat(filenameArchivoRegistroContinuo, registro_continuo);
+    strcat(filenameArchivoRegistroContinuo, id);
     strcat(filenameArchivoRegistroContinuo, archivoRegistroContinuo);
     strcat(filenameArchivoRegistroContinuo, extBin);
     printf("   %s\n", filenameArchivoRegistroContinuo);
@@ -347,7 +346,7 @@ void CrearArchivos()
     //*****************************************************************************
     // Crea el archivo temporal para los datos de registro continuo:
     strcpy(temporalRegistroContinuo, "TramaTemporal");
-    strcat(filenameTemporalRegistroContinuo, pathTMP);
+    strcat(filenameTemporalRegistroContinuo, archivos_temporales);
     strcat(filenameTemporalRegistroContinuo, temporalRegistroContinuo);
     strcat(filenameTemporalRegistroContinuo, extTmp);
     // Crea el archivo de texto en modo sobrescritura
@@ -359,8 +358,8 @@ void CrearArchivos()
     //*****************************************************************************
     // Crea el archivo de texto para guardar los eventos detectados
     strcpy(archivoEventoDetectado, "EventosDetectados");
-    strcat(filenameEventosDetectados, pathEventosDetectados);
-    strcat(filenameEventosDetectados, idEstacion);
+    strcat(filenameEventosDetectados, eventos_detectados);
+    strcat(filenameEventosDetectados, id);
     strcat(filenameEventosDetectados, archivoEventoDetectado);
     strcat(filenameEventosDetectados, extTxt);
     // Crea el archivo de texto en modo append
@@ -372,7 +371,7 @@ void CrearArchivos()
     // Crea el archivo temporal para guardar los nombres actual y anterior de los archivos RC
     // Establece el nombre del archivo temporal:
     strcpy(archivoActualRegistroContinuo, "NombreArchivoRegistroContinuo");
-    strcat(filenameActualRegistroContinuo, pathTMP);
+    strcat(filenameActualRegistroContinuo, archivos_temporales);
     strcat(filenameActualRegistroContinuo, archivoActualRegistroContinuo);
     strcat(filenameActualRegistroContinuo, extTmp);
     // Abre el archivo temporal en modo lectura (El archivo debe existir):
@@ -387,7 +386,7 @@ void CrearArchivos()
     // printf("   %s\n",filenameActualRegistroContinuo);
 
     // Establece el nombre del archivo RC actual (es el mismo nombre sin el path):
-    strcat(nombreActualARC, idEstacion);
+    strcat(nombreActualARC, id);
     strcat(nombreActualARC, archivoRegistroContinuo);
     strcat(nombreActualARC, extBin);
     strcat(nombreActualARC, "\n");
@@ -472,7 +471,10 @@ void NuevoCiclo()
     // CrearArchivos();           //Crea un archivo nuevo si se cumplen las condiciones
 
     // Llama al metodo para determinar si existe o no un evento sismico:
-    DetectarEvento(tramaDatos);
+    if (strcmp(deteccion_eventos, "si") == 0){
+        DetectarEvento(tramaDatos);
+    }
+    
 }
 
 // C:0xA4	F:0xF4

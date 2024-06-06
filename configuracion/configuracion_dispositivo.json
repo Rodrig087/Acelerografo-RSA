@@ -1,0 +1,20 @@
+{
+    "dispositivo": {
+        "id": "NOM00",
+        "ubicacion": "ubicacion",
+        "fuenteReloj": "0",
+        "deteccionEventos": "si",
+        "publicarEventos": "si"
+    },
+    "directorios": {
+        "archivosTemporales": "/home/rsa/tmp/",
+        "registroContinuo": "/home/rsa/resultados/registro-continuo/",
+        "eventosDetectados": "/home/rsa/resultados/eventos-detectados/",
+        "eventosExtraidos": "/home/rsa/resultados/eventos-extraidos/",
+        "archivosMseed": "/home/rsa/resultados/mseed/"
+    },
+    "drive": {
+        "registroContinuo": "token_registro-continuo",
+        "eventosExtraidos": "token_eventos-extraidos"
+    }
+}

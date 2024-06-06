@@ -1,5 +1,5 @@
 {
-    "server_address": "ip-servidor",
+    "serverAddress": "ip-servidor",
     "username": "usuario",
     "password": "contrasena",
     "topicSuscription": "registrocontinuo/extraer",
