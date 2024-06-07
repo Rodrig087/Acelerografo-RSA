@@ -28,7 +28,7 @@ def on_connect(client, userdata, flags, rc):
         print("Conectado al broker MQTT con éxito.")
         # Publicar mensaje "online" cuando se reconecta
         if userdata['is_reconnecting']:
-            publicar_mensaje(client, userdata['config_mqtt']["topic_status"], userdata['dispositivo_id'], "online")
+            publicar_mensaje(client, userdata['config_mqtt']["topicStatus"], userdata['dispositivo_id'], "online")
             userdata['is_reconnecting'] = False
     else:
         print(f"Error al conectar al broker MQTT, código de resultado: {rc}")
