@@ -1,6 +1,6 @@
 # Registro de Cambios
 
-## programas/conversor_mseed.py [5.0.0] - 2024-06-27
+## programas/conversor_mseed.py [2.0.0] - 2024-06-27
 ### Cambiado
 - Se cambio la lectura de parametros mseed de un archivo csv a un archivo json
 - Se cambio la lectura de parametros del dispositivo de un archivo txt a un archivo json
