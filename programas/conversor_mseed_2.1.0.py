@@ -5,12 +5,15 @@ import subprocess
 import time
 import sys
 import json
+from time import time as timer
 #######################################################################################################
 
 
 ######################################### ~Funciones~ #################################################
 # Lee un archivo de configuración en formato JSON y devuelve su contenido como un diccionario.
 def read_fileJSON(nameFile):
+
+    start_time = timer()
     try:
         with open(nameFile, 'r') as f:
             data = json.load(f)
@@ -21,58 +24,81 @@ def read_fileJSON(nameFile):
     except json.JSONDecodeError:
         print(f"Error al decodificar el archivo {nameFile}.")
         return None
+    finally:
+        end_time = timer()
+        print(f"Tiempo de ejecución de read_fileJSON: {end_time - start_time:.4f} segundos")
 
-# Lee el archivo binario, procesa los datos y devuelve un arreglo de NumPy con los datos y una lista de segundos faltantes.
+
 def leer_archivo_binario(archivo_binario):
+    start_time = timer()
     datos = [[], [], []]
-    contador = 0
-    segundo_anterior = None
-    segundos_faltantes = []
+    tiempos = []
 
+    chunk_size = 2506 * 60  # Leer en bloques de aproximadamente 2.5 MB
     with open(archivo_binario, "rb") as f:
         while True:
-            tramaDatos = np.fromfile(f, np.int8, 2506)
-            if len(tramaDatos) != 2506:
+            chunk = np.fromfile(f, dtype=np.uint8, count=chunk_size)
+            if chunk.size == 0:
                 break
-            
-            hora = tramaDatos[2503]
-            minuto = tramaDatos[2504]
-            segundo = tramaDatos[2505]
-            n_segundo = hora * 3600 + minuto * 60 + segundo
-            
-            if segundo_anterior is not None:
-                if n_segundo != segundo_anterior + 1:
-                    segundos_faltantes.extend(range(segundo_anterior + 1, n_segundo))
-                elif n_segundo > segundo_anterior + 1:
-                    # Si hay un salto mayor, se llenan los segundos faltantes intermedios
-                    segundos_faltantes.extend(range(segundo_anterior + 1, n_segundo))
-            
-            segundo_anterior = n_segundo
-            
-            for j in range(0, 3):
-                for i in range(0, 250):
-                    dato_1 = tramaDatos[i * 10 + j * 3 + 1]
-                    dato_2 = tramaDatos[i * 10 + j * 3 + 2]
-                    dato_3 = tramaDatos[i * 10 + j * 3 + 3]
-                    xValue = ((dato_1 << 12) & 0xFF000) + ((dato_2 << 4) & 0xFF0) + ((dato_3 >> 4) & 0xF)
-                    if (xValue >= 0x80000):
-                        xValue = xValue & 0x7FFFF
-                        xValue = -1 * (((~xValue) + 1) & 0x7FFFF)
-                    datos[j].append(int(xValue))
 
-            contador += 1
-            if contador == 864:
-                contador = 0
+            num_tramas = len(chunk) // 2506
+            if num_tramas == 0:
+                continue
 
-    datos_np = np.asarray(datos)
+            chunk = chunk[:num_tramas * 2506].reshape((num_tramas, 2506))
+
+            horas = chunk[:, 2503].astype(np.uint32)
+            minutos = chunk[:, 2504].astype(np.uint32)
+            segundos = chunk[:, 2505].astype(np.uint32)
+
+            n_segundos = horas * 3600 + minutos * 60 + segundos
+            tiempos.extend(n_segundos)
+            
+            # Procesar los datos de forma vectorizada
+            datos_crudos = chunk[:, :2500].reshape((-1, 250, 10))
+
+            for j in range(3):
+                dato_1 = datos_crudos[:, :, j * 3 + 1].flatten()
+                dato_2 = datos_crudos[:, :, j * 3 + 2].flatten()
+                dato_3 = datos_crudos[:, :, j * 3 + 3].flatten()
+
+                xValue = ((dato_1.astype(np.uint32) << 12) & 0xFF000) + ((dato_2.astype(np.uint32) << 4) & 0xFF0) + ((dato_3.astype(np.uint32) >> 4) & 0xF)
+
+                mask = xValue >= 0x80000
+                xValue[mask] = xValue[mask] & 0x7FFFF
+                xValue[mask] = -1 * ((~xValue[mask] + 1) & 0x7FFFF)
+
+                datos[j].extend(xValue.astype(np.int32))
+
+    datos_np = np.array(datos)
+
+    # Detectar segundos faltantes en el array tiempos
+    tiempos_np = np.array(tiempos)
+    segundos_faltantes = []
+    dif_segundos = np.diff(tiempos_np)
+    missing_indices = np.where(dif_segundos > 1)[0]
+    for idx in missing_indices:
+        segundos_faltantes.extend(range(tiempos_np[idx] + 1, tiempos_np[idx + 1]))
+
+    
+    # Imprimir primeros y últimos elementos de tiempos_np y segundos_faltantes
+    print(f"Primer elemento de tiempos_np: {tiempos_np[0]}")
+    print(f"Último elemento de tiempos_np: {tiempos_np[-1]}")
 
     if segundos_faltantes:
-        print("Segundos faltantes:", segundos_faltantes)
+        print(f"Primer elemento de segundos_faltantes: {segundos_faltantes[0]}")
+        print(f"Último elemento de segundos_faltantes: {segundos_faltantes[-1]}")
+        print(f"Se encontraron {len(segundos_faltantes)} segundos faltantes")
 
+    end_time = timer()
+    print(f"Tiempo de ejecución de leer_archivo_binario: {end_time - start_time:.4f} segundos")
     return datos_np, segundos_faltantes if segundos_faltantes else None
+
 
 # Extrae y convierte valores de tiempo del archivo binario y los devuelve en un diccionario.
 def extraer_tiempo_binario(archivo):
+
+    start_time = timer()
     # Abrir el archivo en modo de lectura binaria
     with open(archivo, "rb") as f:
         # Leer 2506 bytes del archivo y almacenarlos en un arreglo de numpy
@@ -105,11 +131,15 @@ def extraer_tiempo_binario(archivo):
         "n_segundo": n_segundo
     }
 
+    end_time = timer()
+    print(f"Tiempo de ejecución de extraer_tiempo_binario: {end_time - start_time:.4f} segundos")
     return(tiempo_binario)
 
 # Genera el nombre del archivo Mini-SEED basado en el tipo de archivo, el código de estación y el tiempo extraído.
 def nombrar_archivo_mseed(tipoArchivo,codigo_estacion,tiempo_binario):
-   # Formatear fecha y hora como cadenas
+    
+    start_time = timer()
+    # Formatear fecha y hora como cadenas
     fecha_string = tiempo_binario["anio_s"] + tiempo_binario["mes_s"] + tiempo_binario["dia_s"]
     hora_string = tiempo_binario["hora_s"] + tiempo_binario["minuto_s"] + tiempo_binario["segundo_s"]
     
@@ -122,11 +152,14 @@ def nombrar_archivo_mseed(tipoArchivo,codigo_estacion,tiempo_binario):
         fileName = f'/home/rsa/resultados/eventos-extraidos/{codigo_estacion}_{fecha_string}_{hora_string}.mseed'
     
     print(fileName)
-
+    end_time = timer()
+    print(f"Tiempo de ejecución de nombrar_archivo_mseed: {end_time - start_time:.4f} segundos")
     return fileName
     
 # Convierte los datos procesados del archivo binario a formato Mini-SEED y los guarda con el nombre especificado.
 def conversion_mseed_digital(fileName, tiempo_binario, datos_archivo_binario, segundos_faltantes, parametros_mseed):
+    
+    start_time = timer()
     nombre = parametros_mseed["SENSOR(2)"]
 
     # Crear trazas para cada canal
@@ -139,8 +172,15 @@ def conversion_mseed_digital(fileName, tiempo_binario, datos_archivo_binario, se
     
     stData.write(fileName, format='MSEED', encoding='STEIM1', reclen=512)
 
+    end_time = timer()
+    print(f"Tiempo de ejecución de conversion_mseed_digital: {end_time - start_time:.4f} segundos")
+
+
 # Crea una traza de datos con los parámetros especificados y ajusta los datos para incluir ceros en los segundos faltantes si es necesario.
 def obtenerTraza(nombreCanal, num_canal, data, tiempo_binario, segundos_faltantes, parametros_mseed):
+    
+    start_time = timer()
+
     anio = tiempo_binario["anio"]
     mes = tiempo_binario["mes"]
     dia = tiempo_binario["dia"]
@@ -199,12 +239,17 @@ def obtenerTraza(nombreCanal, num_canal, data, tiempo_binario, segundos_faltante
     else:
         traza = Trace(data=data, header=stats)
 
+    end_time = timer()
+    print(f"Tiempo de ejecución de obtenerTraza: {end_time - start_time:.4f} segundos")
+    
     return traza
 
 #######################################################################################################
 
 ############################################ ~Main~ ###################################################
 def main():
+
+    start_time_total = timer()
 
     # Recibe como parametro el tipo de archivo binario a convertir (1:Resgistro continuo 2:Eventos extraidos)
     tipoArchivo = sys.argv[1] 
@@ -250,6 +295,9 @@ def main():
     conversion_mseed_digital(nombre_archivo_mseed, tiempo_binario, datos_archivo_binario, segundos_faltantes, config_mseed)
 
     print('Se ha creado el archivo: %s' %nombre_archivo_mseed)
+
+    end_time_total = timer()
+    print(f"Tiempo total de ejecución: {end_time_total - start_time_total:.4f} segundos")
 
     '''
     # Sube los archivos convertidos a Drive
