@@ -31,6 +31,6 @@
 ### Patch
 - Se realizó un cambio en el código para que la estructura del nombre de los archivos coincidan con los cambios implementados en el programa subir_archivo_drive.py
 
-# configuracion/configuracion_dispositivo.json | setup-scripts/actualizar.sh | setup-scripts/iniciar.sh | setup-scripts/compilar.sh - 2024-07-11
+## configuracion/configuracion_dispositivo.json | setup-scripts/actualizar.sh | setup-scripts/iniciar.sh | setup-scripts/compilar.sh - 2024-07-11
 ### Patch
 - Se realizaron correcciones para que los nombres de las variables y los programas coincidan con los nuevos formatos
