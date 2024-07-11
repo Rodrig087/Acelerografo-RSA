@@ -118,8 +118,8 @@ int main(int argc, char *argv[])
 	RecuperarVector();
 
 	// Comando para ejecutar el script de Python
-	const char *comandoPython = "sudo python3 /home/rsa/ejecutables/ConversorMseed.py 2";
-	system(comandoPython);
+	//const char *comandoPython = "sudo python3 /home/rsa/programas/ConversorMseed.py 2";
+	//system(comandoPython);
 
 	return 0;
 }
@@ -239,7 +239,7 @@ void CrearArchivo(unsigned int duracionEvento, unsigned char *tramaRegistro)
 	char tiempoNodo[6];
 
 	// Variables para crear los archivos de datos:
-	char filenameEventoExtraido[100];
+	char filenameEventoExtraido[30];
 
 	// Se leen los datos de configuracion:
 	printf("Leyendo archivo de configuracion...\n");
@@ -278,8 +278,8 @@ void CrearArchivo(unsigned int duracionEvento, unsigned char *tramaRegistro)
 	sprintf(duracionEventoStr, "%0.3d", duracionEvento);
 
 	// Crea el archivo temporal para guardar el nombre del archivo de registro continuo actual:
-	strcpy(filenameEventoExtraido, pathEventosExtraidos);
-	strcat(filenameEventoExtraido, idEstacion);
+	//strcpy(filenameEventoExtraido, pathEventosExtraidos);
+	strcpy(filenameEventoExtraido, idEstacion);
 	strcat(filenameEventoExtraido, tiempoNodoStr);
 	strcat(filenameEventoExtraido, duracionEventoStr);
 	strcat(filenameEventoExtraido, extBin);
@@ -291,7 +291,7 @@ void CrearArchivo(unsigned int duracionEvento, unsigned char *tramaRegistro)
 	// Abre el archivo temporal para escribir el nnombre del archivo en modo escritura:
 	ftmp = fopen("/home/rsa/tmp/NombreArchivoEventoExtraido.tmp", "w+");
 	// Escribe el nombre del archivo:
-	fwrite(filenameEventoExtraido, sizeof(char), 66, ftmp);
+	fwrite(filenameEventoExtraido, sizeof(char), 27, ftmp);
 	// Cierra el archivo temporal:
 	fclose(ftmp);
 }

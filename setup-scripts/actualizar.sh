@@ -5,8 +5,8 @@ sh setup-scripts/compilar.sh
 
 # Copia los scripts de Python a la carpeta /home/rsa/ejecutables
 cp /home/rsa/Acelerografo-RSA/programas/SubirDirectorioDrive*.py /home/rsa/ejecutables/SubirDirectorioDrive.py
-cp /home/rsa/Acelerografo-RSA/programas/SubirArchivoDrive*.py /home/rsa/ejecutables/SubirArchivoDrive.py
-cp /home/rsa/Acelerografo-RSA/programas/ConversorMseed*.py /home/rsa/ejecutables/ConversorMseed.py
+cp /home/rsa/Acelerografo-RSA/programas/subir_archivo_drive*.py /home/rsa/ejecutables/SubirArchivoDrive.py
+cp /home/rsa/Acelerografo-RSA/programas/conversor_mseed*.py /home/rsa/ejecutables/ConversorMseed.py
 cp /home/rsa/Acelerografo-RSA/programas/LimpiarArchivosRegistro*.py /home/rsa/ejecutables/LimpiarArchivosRegistro.py
 cp /home/rsa/Acelerografo-RSA/programas/PublicarEventoMQTT.py /home/rsa/ejecutables/PublicarEventoMQTT.py
 cp /home/rsa/Acelerografo-RSA/programas/ExtractorEventosMQTT.py /home/rsa/ejecutables/ExtractorEventosMQTT.py

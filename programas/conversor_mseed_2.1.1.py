@@ -12,8 +12,6 @@ from time import time as timer
 ######################################### ~Funciones~ #################################################
 # Lee un archivo de configuración en formato JSON y devuelve su contenido como un diccionario.
 def read_fileJSON(nameFile):
-
-    start_time = timer()
     try:
         with open(nameFile, 'r') as f:
             data = json.load(f)
@@ -24,10 +22,7 @@ def read_fileJSON(nameFile):
     except json.JSONDecodeError:
         print(f"Error al decodificar el archivo {nameFile}.")
         return None
-    finally:
-        end_time = timer()
-        print(f"Tiempo de ejecución de read_fileJSON: {end_time - start_time:.4f} segundos")
-
+    
 
 def leer_archivo_binario(archivo_binario):
     start_time = timer()
@@ -97,8 +92,6 @@ def leer_archivo_binario(archivo_binario):
 
 # Extrae y convierte valores de tiempo del archivo binario y los devuelve en un diccionario.
 def extraer_tiempo_binario(archivo):
-
-    start_time = timer()
     # Abrir el archivo en modo de lectura binaria
     with open(archivo, "rb") as f:
         # Leer 2506 bytes del archivo y almacenarlos en un arreglo de numpy
@@ -130,36 +123,23 @@ def extraer_tiempo_binario(archivo):
         "segundo_s": str(segundo).zfill(2),
         "n_segundo": n_segundo
     }
-
-    end_time = timer()
-    print(f"Tiempo de ejecución de extraer_tiempo_binario: {end_time - start_time:.4f} segundos")
     return(tiempo_binario)
 
+
 # Genera el nombre del archivo Mini-SEED basado en el tipo de archivo, el código de estación y el tiempo extraído.
-def nombrar_archivo_mseed(tipoArchivo,codigo_estacion,tiempo_binario):
-    
-    start_time = timer()
+def nombrar_archivo_mseed(codigo_estacion,tiempo_binario):
     # Formatear fecha y hora como cadenas
     fecha_string = tiempo_binario["anio_s"] + tiempo_binario["mes_s"] + tiempo_binario["dia_s"]
     hora_string = tiempo_binario["hora_s"] + tiempo_binario["minuto_s"] + tiempo_binario["segundo_s"]
     
-    # Determinar el nombre del archivo basado en el tipo de archivo
-    if tipoArchivo == '1':
-        # Archivos de registro continuo
-        fileName = f'/home/rsa/resultados/mseed/{codigo_estacion}_{fecha_string}_{hora_string}.mseed'
-    elif tipoArchivo == '2':
-        # Archivos de eventos extraídos
-        fileName = f'/home/rsa/resultados/eventos-extraidos/{codigo_estacion}_{fecha_string}_{hora_string}.mseed'
-    
+    fileName = f'{codigo_estacion}_{fecha_string}_{hora_string}.mseed'
+
     print(fileName)
-    end_time = timer()
-    print(f"Tiempo de ejecución de nombrar_archivo_mseed: {end_time - start_time:.4f} segundos")
     return fileName
     
+
 # Convierte los datos procesados del archivo binario a formato Mini-SEED y los guarda con el nombre especificado.
-def conversion_mseed_digital(fileName, tiempo_binario, datos_archivo_binario, segundos_faltantes, parametros_mseed):
-    
-    start_time = timer()
+def conversion_mseed_digital(fileName, tipoArchivo, tiempo_binario, datos_archivo_binario, segundos_faltantes, parametros_mseed):
     nombre = parametros_mseed["SENSOR(2)"]
 
     # Crear trazas para cada canal
@@ -169,18 +149,19 @@ def conversion_mseed_digital(fileName, tiempo_binario, datos_archivo_binario, se
 
     # Crear un objeto Stream con las trazas
     stData = Stream(traces=[trazaCH1, trazaCH2, trazaCH3])
-    
-    stData.write(fileName, format='MSEED', encoding='STEIM1', reclen=512)
 
-    end_time = timer()
-    print(f"Tiempo de ejecución de conversion_mseed_digital: {end_time - start_time:.4f} segundos")
+    if tipoArchivo == '1':
+        # Archivos de registro continuo
+        fileNameCompleto = '/home/rsa/resultados/mseed/' + fileName
+    elif tipoArchivo == '2':
+        # Archivos de eventos extraídos
+        fileNameCompleto = '/home/rsa/resultados/eventos-extraidos/' + fileName
+    
+    stData.write(fileNameCompleto, format='MSEED', encoding='STEIM1', reclen=512)
 
 
 # Crea una traza de datos con los parámetros especificados y ajusta los datos para incluir ceros en los segundos faltantes si es necesario.
 def obtenerTraza(nombreCanal, num_canal, data, tiempo_binario, segundos_faltantes, parametros_mseed):
-    
-    start_time = timer()
-
     anio = tiempo_binario["anio"]
     mes = tiempo_binario["mes"]
     dia = tiempo_binario["dia"]
@@ -238,10 +219,7 @@ def obtenerTraza(nombreCanal, num_canal, data, tiempo_binario, segundos_faltante
         traza = Trace(data=data_completo, header=stats)
     else:
         traza = Trace(data=data, header=stats)
-
-    end_time = timer()
-    print(f"Tiempo de ejecución de obtenerTraza: {end_time - start_time:.4f} segundos")
-    
+   
     return traza
 
 #######################################################################################################
@@ -252,10 +230,14 @@ def main():
     start_time_total = timer()
 
     # Recibe como parametro el tipo de archivo binario a convertir (1:Resgistro continuo 2:Eventos extraidos)
+    if len(sys.argv) != 2:
+        print("Uso: conversor_mseed.py <tipo_archivo: 1.Registro continuo 2.Evento extraido>")
+        return
+
     tipoArchivo = sys.argv[1] 
 
     config_mseed_path = '/home/rsa/configuracion/configuracion_mseed.json'
-    config_dispositivo_path = '/home/rsa/configuracion/DatosConfiguracion.json'
+    config_dispositivo_path = '/home/rsa/configuracion/configuracion_dispositivo.json'
     archivoNombresArchivosRC = '/home/rsa/tmp/NombreArchivoRegistroContinuo.tmp'
     archivoNombresArchivosEE = '/home/rsa/tmp/NombreArchivoEventoExtraido.tmp'
 
@@ -273,7 +255,7 @@ def main():
     
     if tipoArchivo=='1':
         #Archivos registro continuo
-        path_registro_continuo = config_dispositivo.get("directorios", {}).get("registro-continuo", "Unknown")
+        path_registro_continuo = config_dispositivo.get("directorios", {}).get("registro_continuo", "Unknown")
         with open(archivoNombresArchivosRC) as ficheroNombresArchivos:
             lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
             nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
@@ -281,33 +263,32 @@ def main():
             print(f'Convirtiendo el archivo: {archivo_binario}')
     elif tipoArchivo=='2':
         #Archivos eventos extraidos
-       with open(archivoNombresArchivosEE) as ficheroNombresArchivos:
+        path_eventos_extraidos = config_dispositivo.get("directorios", {}).get("eventos_extraidos", "Unknown")
+        with open(archivoNombresArchivosEE) as ficheroNombresArchivos:
             lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
-            archivo_binario = lineasFicheroNombresArchivos[0].rstrip('\n')
+            archivo_binario = path_eventos_extraidos + lineasFicheroNombresArchivos[0].rstrip('\n')
             print(f'Convirtiendo el archivo: {archivo_binario}')
 
     
     codigo_estacion = config_mseed["CODIGO(1)"]
     tiempo_binario = extraer_tiempo_binario(archivo_binario)
-    nombre_archivo_mseed = nombrar_archivo_mseed(tipoArchivo, codigo_estacion, tiempo_binario)
+    nombre_archivo_mseed = nombrar_archivo_mseed(codigo_estacion, tiempo_binario)
     datos_archivo_binario, segundos_faltantes = leer_archivo_binario(archivo_binario)
 
-    conversion_mseed_digital(nombre_archivo_mseed, tiempo_binario, datos_archivo_binario, segundos_faltantes, config_mseed)
+    conversion_mseed_digital(nombre_archivo_mseed, tipoArchivo, tiempo_binario, datos_archivo_binario, segundos_faltantes, config_mseed)
 
     print('Se ha creado el archivo: %s' %nombre_archivo_mseed)
 
     end_time_total = timer()
     print(f"Tiempo total de ejecución: {end_time_total - start_time_total:.4f} segundos")
 
-    '''
     # Sube los archivos convertidos a Drive
     if tipoArchivo=='1':
-        subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "3", n_mseed])
+        subprocess.run(["python3", "/home/rsa/ejecutables/subir_archivo_drive.py", nombre_archivo_mseed, "3", "1"])
         time.sleep(5)
-        subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "1", archivo_binario])
+        subprocess.run(["python3", "/home/rsa/ejecutables/subir_archivo_drive.py", nombreArchvioRegistroContinuo, "1", "0"])
     elif tipoArchivo=='2':
-        subprocess.run(["python3", "/home/rsa/ejecutables/SubirArchivoDrive.py", "2", n_mseed])
-    '''
+        subprocess.run(["python3", "/home/rsa/ejecutables/subir_archivo_drive.py", nombre_archivo_mseed, "2", "1"])
 
 #######################################################################################################
 if __name__ == '__main__':
