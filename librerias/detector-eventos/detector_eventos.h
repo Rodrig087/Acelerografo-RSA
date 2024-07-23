@@ -41,7 +41,6 @@ extern double coeficientes[FILTER_LEN];
 // Con cada evento nuevo se sobreescribe la informacion, antes se debe leer en el programa de Python
 // static char *fileNameEventosDetectados = "/home/rsa/TMP/EventosDetectados.tmp";
 
-char filenameEventosDetectados[100];
 extern FILE *obj_fp;
 
 // DECLARACION DE FUNCIONES

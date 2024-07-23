@@ -64,28 +64,33 @@ struct datos_config *compilar_json(const char *filename)
         {
             snprintf(datos->id, sizeof(datos->id), "%s", id1);
         }
-        const char *fuente_reloj1 = json_string_value(json_object_get(dispositivo, "fuenteReloj"));
+        const char *fuente_reloj1 = json_string_value(json_object_get(dispositivo, "fuente_reloj"));
         if (fuente_reloj1)
         {
             snprintf(datos->fuente_reloj, sizeof(datos->fuente_reloj), "%s", fuente_reloj1);
+        }
+        const char *deteccion_eventos1 = json_string_value(json_object_get(dispositivo, "deteccion_eventos"));
+        if (deteccion_eventos1)
+        {
+            snprintf(datos->deteccion_eventos, sizeof(datos->deteccion_eventos), "%s", deteccion_eventos1);
         }
     }
 
     if (json_is_object(directorios))
     {
-        const char *archivos_temporales1 = json_string_value(json_object_get(directorios, "archivosTemporales"));
+        const char *archivos_temporales1 = json_string_value(json_object_get(directorios, "archivos_temporales"));
         if (archivos_temporales1)
         {
             snprintf(datos->archivos_temporales, sizeof(datos->archivos_temporales), "%s", archivos_temporales1);
         }
 
-        const char *registro_continuo1 = json_string_value(json_object_get(directorios, "registroContinuo"));
+        const char *registro_continuo1 = json_string_value(json_object_get(directorios, "registro_continuo"));
         if (registro_continuo1)
         {
             snprintf(datos->registro_continuo, sizeof(datos->registro_continuo), "%s", registro_continuo1);
         }
 
-        const char *eventos_detectados1 = json_string_value(json_object_get(directorios, "eventosDetectados"));
+        const char *eventos_detectados1 = json_string_value(json_object_get(directorios, "eventos_detectados"));
         if (eventos_detectados1)
         {
             snprintf(datos->eventos_detectados, sizeof(datos->eventos_detectados), "%s", eventos_detectados1);

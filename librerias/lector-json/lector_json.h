@@ -5,6 +5,7 @@ struct datos_config
 {
     char id[10];
     char fuente_reloj[10];
+    char deteccion_eventos[10];
     char archivos_temporales[60];
     char registro_continuo[60];
     char eventos_detectados[60];

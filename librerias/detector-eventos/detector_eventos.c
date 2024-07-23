@@ -1,3 +1,11 @@
+//***********************************************************************************************************
+// Compilar libreria:
+// 1. Compila el código fuente en un archivo objeto:
+//    gcc -c -o /home/rsa/librerias/detector-eventos/detector_eventos.o /home/rsa/librerias/detector-eventos/detector_eventos.c
+// 2. Crea una biblioteca compartida:
+//    gcc -shared -o /home/rsa/librerias/detector-eventos/libdetector_eventos.so /home/rsa/librerias/detector-eventos/detector_eventos.o
+//***********************************************************************************************************
+
 #include <time.h>
 #include <sys/time.h>
 
@@ -11,7 +19,7 @@
 #include <stdbool.h>
 
 // Libreria Colocada
-#include "eventos.h"
+#include "detector_eventos.h"
 
 // Define los parametros del metodo STA/LTA en segundos multiplicado por la frecuencia de muestreo
 #define fSample 250
@@ -181,20 +189,7 @@ void DetectarEvento(unsigned char *tramaD)
             if (enviarEvt == true && horaLong >= (tiempoFinEvtAnt + timeEntreEventos) && valEvento == 0)
             {
                 enviarEvt = false;
-                // Abre el archivo de texto, borra la informacion actual y escribe los nuevos
-                // datos del evento detectado
-                obj_fp = fopen(filenameEventosDetectados, "a");
-                // Guarda en el archivo de texto, la fecha y la hora de inicio del evento, ademas su duracion
-                // En las variables de evento anterior se encuentra toda la informacion (aunque creo que da
-                // igual usar las de evento actual en este punto)
-                fprintf(obj_fp, "%lu\t%lu\t%lu\n", fechaInitEvtAnt, tiempoInitEvtAnt, duracionEvtAnt);
-                // Cierra el archivo temporal
-                fclose(obj_fp);
-
                 printf("Evento detectado: Fecha %lu | Hora inicio %lu | Duracion %lu | HoraActual %lu \n", fechaInitEvtAnt, tiempoInitEvtAnt, duracionEvtAnt, horaLong);
-
-                // Extrae el evento:
-                // ExtraerEvento(filenameArchivoRegistroContinuo, tiempoInitEvtAnt, duracionEvtAnt);
             }
 
             // Si aun no se han detectado eventos y el dato es 1, significa el comienzo de un evento
@@ -222,7 +217,7 @@ void DetectarEvento(unsigned char *tramaD)
                 //************************************************************************
                 // Aqui puede ir el metodo para publicar el evento con parametro horaLong
                 //************************************************************************
-                sprintf(command, "python3 /home/rsa/ejecutables/PublicarEventoMQTT.py %lu %lu %lu", fechaLong, horaLong, 1);
+                sprintf(command, "python3 /home/rsa/ejecutables/publicar_evento_mqtt.py %lu %lu %lu", fechaLong, horaLong, 1);
                 system(command);
             }
             // Si hay un evento actualmente y valEvento es 0, significa fin del evento
@@ -563,37 +558,7 @@ char calcularIsEvento(float resul_STA_LTA)
     return isEvento;
 }
 // *********************************************************************************************
-// ******************************** Fin Metodo ExtraerEvento **********************************
+// ******************************** Fin Metodo calcularIsEvento **********************************
 // *********************************************************************************************
 
-// *********************************************************************************************
-// Metodo para extraer el evento registrado por el metodo STA/LTA.
-// Utiliza como parametros de entrada el nombre del archivo de registro continuo, el tiempo del evento y su duracion
-// Invoca al programa ExtraerEventoBin.C, podria funcionar si se adapta este programa para que funcione como libreria,
-// pero en ese caso es necesario que se ejecute dentro de un hilo para evitar que interfiera con el desarrollo del programa.
-// *********************************************************************************************
-void ExtraerEvento(char *nombreArchivoRegistro, unsigned int tiempoEvento, unsigned int duracionEvento)
-{
 
-    char parametroExtraerEvento[150];
-    char nombreArchivoRegistroStr[100];
-    char tiempoEventoStr[7];
-    char duracionEventoStr[5];
-    char backgroud[3];
-
-    strcpy(nombreArchivoRegistroStr, nombreArchivoRegistro);
-    sprintf(tiempoEventoStr, " %d ", tiempoEvento);
-    sprintf(duracionEventoStr, "%d", duracionEvento);
-
-    strcpy(parametroExtraerEvento, "/home/rsa/ejecutables/extraerevento ");
-    strcpy(backgroud, " &");
-    strcat(parametroExtraerEvento, nombreArchivoRegistroStr);
-    strcat(parametroExtraerEvento, tiempoEventoStr);
-    strcat(parametroExtraerEvento, duracionEventoStr);
-    strcat(parametroExtraerEvento, backgroud);
-
-    system(parametroExtraerEvento);
-}
-// *********************************************************************************************
-// ******************************** Fin Metodo ExtraerEvento **********************************
-// *********************************************************************************************
