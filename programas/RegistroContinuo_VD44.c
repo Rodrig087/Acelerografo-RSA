@@ -1,5 +1,5 @@
 // Compilar:
-// gcc -o /home/rsa/ejecutables/acelerografo /home/rsa/desarrollo/RegistroContinuo_*.c \
+// gcc -g -o /home/rsa/ejecutables/acelerografo /home/rsa/desarrollo/RegistroContinuo_*.c \
 -I/home/rsa/librerias/lector-json \
 -I/home/rsa/librerias/detector-eventos \
 -L/home/rsa/librerias/lector-json \
@@ -15,6 +15,11 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include <stdbool.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
@@ -22,6 +27,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+
+#define PIPE_NAME "/tmp/my_pipe"
 
 // Incluye las librerias de deteccion de eventos y de lectura del archivo json
 #include "lector_json.h"
@@ -37,6 +44,8 @@
 #define TIEMPO_SPI 10
 #define NUM_CICLOS 1
 #define FreqSPI 2000000
+
+
 
 // Declaracion de variables
 unsigned short i;
@@ -76,11 +85,7 @@ long tiempoPicUNIX, tiempoRedUNIX, deltaUNIX;
 // Variables para extraer los datos de configuracion:
 char id[10];
 char deteccion_eventos[10];
-//char dir_registro_continuo[60];
-//char dir_eventos_detectados[60];
-//char dir_archivos_temporales[60];
-
-
+char publicacion_eventos[10];
 
 // Variables para crear los archivos de datos:
 char temporalRegistroContinuo[35];
@@ -98,6 +103,7 @@ int ComprobarNTP();
 
 // Metodos para la comunicacion con el dsPIC
 int ConfiguracionPrincipal();
+void handle_sigpipe(int sig);
 void LeerArchivoConfiguracion();
 void CrearArchivos();
 void GuardarVector(unsigned char *tramaD);
@@ -109,6 +115,7 @@ void EnviarTiempoLocal();                     // C:0xA4	F:0xF4
 void ObtenerTiempoPIC();                      // C:0xA5	F:0xF5
 void ObtenerReferenciaTiempo(int referencia); // C:0xA6	F:0xF6
 void SetRelojLocal(unsigned char *tramaTiempo);
+
 
 // Declaración global
 struct datos_config *datos_configuracion;
@@ -131,6 +138,7 @@ int main(void)
     banTiempoRed = 0;
     banTiempoRTC = 0;
 
+    
     // Realiza la configuracion principal:
     ConfiguracionPrincipal();
 
@@ -173,10 +181,21 @@ int main(void)
     // Liberar la memoria del struct datos_config
     free(datos_configuracion);
 
+    // Configurar el manejador de SIGPIPE
+    signal(SIGPIPE, handle_sigpipe);
+    // Crear el named pipe
+    if (mkfifo(PIPE_NAME, 0666) == -1) {
+        if (errno != EEXIST) {
+            perror("Error al crear el pipe");
+            exit(1);
+        }
+    }
+
     // Bucle infinito
     while (1)
     {
-        delay(10);
+        //delay(10);
+        __asm__("nop");  // Instrucción "no operation" para evitar optimización excesiva
     }
 
     bcm2835_spi_end();
@@ -226,6 +245,11 @@ int ConfiguracionPrincipal()
     printf("\n****************************************\n");
     printf("Configuracion completa\n");
     printf("****************************************\n");
+}
+
+
+void handle_sigpipe(int sig) {
+    printf("SIGPIPE caught. Reader probably disconnected.\n");
 }
 
 int ComprobarNTP()
@@ -583,46 +607,6 @@ void ObtenerTiempoPIC()
     printf("Tiempo UNIX dsPIC: %d\n", tiempoPicUNIX);
     printf("****************************************\n");
 
-    /*
-    // Comprueba si se recibio cualquier fuente de reloj proveniente del RTC del dsPIC:
-    if (fuenteTiempoPic == 2 || fuenteTiempoPic == 4 || fuenteTiempoPic == 5)
-    {
-        // Comprueba que la hora de Red sea confiable:
-        if (banTiempoRed == 1)
-        {
-            // Comprueba que la diferencia entre el tiempo de Red y el tiempo del RTC no sea mayor a 10 segundos:
-            deltaUNIX = abs(tiempoRedUNIX - tiempoPicUNIX);
-            if (deltaUNIX > 10)
-            {
-                // Envia la hora de la Red al dsPIC:
-                printf("Hora RTC no valida. Enviando hora de Red...\n");
-                fuenteTiempo = 0; // 0:RPi 1:GPS 2:RTC
-                ObtenerReferenciaTiempo(fuenteTiempo);
-            }
-            else
-            {
-                printf("Hora RTC valida.\n");
-                // Crea los archivos e inicia el muestreo:
-                CrearArchivos();
-                IniciarMuestreo();
-            }
-        }
-        else
-        {
-            // Si la hora de Red no es confiable, utiliza la hora del RTC:
-            SetRelojLocal(tiempoPIC);
-            // Crea los archivos e inicia el muestreo:
-            CrearArchivos();
-            IniciarMuestreo();
-        }
-    }
-    else
-    {
-        CrearArchivos();
-        IniciarMuestreo();
-    }
-    */
-
     CrearArchivos();
     IniciarMuestreo();
 }
@@ -658,44 +642,49 @@ void ObtenerReferenciaTiempo(int referencia)
 }
 //**************************************************************************************************************************************
 
-// Esta funcion sirve para guardar en el archivo binario las tramas de 1 segundo recibidas
-void GuardarVector(unsigned char *tramaD)
-{
-    unsigned int outFwrite;
-    unsigned int tmpFwrite;
 
-    // Guarda la trama en el archivo de registro continuo
-    if (fp != NULL)
-    {
-        do
-        {
-            // Guarda la trama en el archivo binario:
+
+// Esta funcion sirve para guardar en el archivo binario las tramas de 1 segundo recibidas
+void GuardarVector(unsigned char *tramaD) {
+    
+    // Guardar la trama en el archivo de registro continuo
+    if (fp != NULL) {
+        size_t outFwrite;
+        do {
             outFwrite = fwrite(tramaD, sizeof(char), NUM_ELEMENTOS, fp);
-            // Guarda la trama en el archivo temporal:
-            // fTramaTmp = fopen(filenameTemporalRegistroContinuo, "wb");
-            // tmpFwrite = fwrite(tramaD, sizeof(char), NUM_ELEMENTOS, fTramaTmp);
-            // fclose(fTramaTmp); */
-            // Ejecuta el script de python:
-            // system("python /home/rsa/Programas/RegistroContinuo/V3/BinarioToMiniSeed_V12.py");
         } while (outFwrite != NUM_ELEMENTOS);
         fflush(fp);
     }
-
-    // Guarda la trama en el archivo temporal
-
-    fTramaTmp = fopen(filenameTemporalRegistroContinuo, "wb");
-    if (fTramaTmp != NULL)
-    {
-        do
-        {
-            tmpFwrite = fwrite(tramaD, sizeof(char), NUM_ELEMENTOS, fTramaTmp);
-
-        } while (tmpFwrite != NUM_ELEMENTOS);
-
-        fflush(fTramaTmp);
-        fclose(fTramaTmp);
+    
+    // Escribir en el pipe
+    int fd;
+    printf("Abriendo pipe para escritura...\n");
+    fd = open(PIPE_NAME, O_WRONLY | O_NONBLOCK);
+    
+    if (fd == -1) {
+        if (errno == ENXIO) {
+            printf("No hay lector. No se puede escribir.\n");
+            return;
+        } else {
+            perror("Error al abrir el pipe");
+            return;
+        }
     }
+    printf("Escribiendo datos...\n");
+    ssize_t bytes_written = write(fd, tramaD, NUM_ELEMENTOS);
+    if (bytes_written == -1) {
+        if (errno == EPIPE) {
+            printf("El lector se desconectó.\n");
+        } else {
+            perror("Error al escribir en el pipe");
+        }
+    } else {
+        printf("Escritos %zd bytes\n", bytes_written);
+    }
+    close(fd);
+
 }
+
 
 void SetRelojLocal(unsigned char *tramaTiempo)
 {
