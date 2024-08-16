@@ -11,8 +11,8 @@ case "$1" in
     sudo $PROJECT_LOCAL_ROOT/scripts/acelerografo/ejecutables/registro_continuo &
     #sleep 5
     #sudo python3 /home/rsa/ejecutables/SubirRegistroDrive.py &
-    #sleep 70
-    #sudo python3 $PROJECT_LOCAL_ROOT/scripts/mseed/binary_to_mseed.py 1 &
+    sleep 10
+    sudo python3 $PROJECT_LOCAL_ROOT/scripts/mseed/binary_to_mseed.py 1 &
     ;;
   stop)
     echo "Deteniendo sistema de registro continuo..."

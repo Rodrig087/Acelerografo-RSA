@@ -23,6 +23,10 @@ mkdir -p $PROJECT_LOCAL_ROOT/scripts/drive
 # Asegurar que los directorios creados tengan la propiedad correcta (sin sudo)
 chown -R $USER:$USER $PROJECT_LOCAL_ROOT
 
+# Crea los archivos necesarios
+echo $(date) > $PROJECT_LOCAL_ROOT/resultados/registro-continuo/nueva-estacion.txt
+echo 'nueva-estacion.txt' > $PROJECT_LOCAL_ROOT/tmp-files/NombreArchivoRegistroContinuo.tmp
+
 # Copiar los archivos de configuración del proyecto en Git al proyecto local
 cp $PROJECT_GIT_ROOT/configuration/configuracion_dispositivo.json $PROJECT_LOCAL_ROOT/configuracion/
 cp $PROJECT_GIT_ROOT/configuration/configuracion_mqtt.json $PROJECT_LOCAL_ROOT/configuracion/
