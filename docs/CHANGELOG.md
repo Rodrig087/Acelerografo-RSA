@@ -34,3 +34,20 @@
 ## configuracion/configuracion_dispositivo.json | setup-scripts/actualizar.sh | setup-scripts/iniciar.sh | setup-scripts/compilar.sh - 2024-07-11
 ### Patch
 - Se realizaron correcciones para que los nombres de las variables y los programas coincidan con los nuevos formatos
+
+## scripts/setup/deploy.sh | scripts/setup/update.sh | scripts/setup/makefile - 2024-08-16
+### Cambios / Optimización 
+- Se realizó una reestructuración completa de los directorios y archivos del proyecto
+- Se añadió el script `deploy.sh` que automatiza el proceso de despliegue del proyecto. 
+  - Crea los directorios necesarios en el proyecto local.
+  - Copia los archivos de configuración, scripts de Python y task-scripts desde el repositorio Git a sus respectivas ubicaciones.
+  - Copia los task-scripts a `/usr/local/bin` y concede los permisos de ejecución necesarios.
+  - Modifica el crontab solo si es necesario.
+  - Ejecuta el `Makefile` para compilar los programas si es requerido.
+
+- Se añadió el script `update.sh` para la actualización automática del proyecto.
+  - Verifica si se realizaron cambios en los archivos de configuración, scripts de MQTT, MSeed y Drive.
+  - Actualiza los archivos en el proyecto local si hay cambios.
+  - Verifica si se realizaron cambios en los task-scripts y actualiza `/usr/local/bin` sin modificar el crontab.
+  - Verifica si hay cambios en los archivos de `acelerografo` y `libraries` y ejecuta `make` si es necesario.
+  - Imprime una lista de los archivos que fueron actualizados durante el proceso.

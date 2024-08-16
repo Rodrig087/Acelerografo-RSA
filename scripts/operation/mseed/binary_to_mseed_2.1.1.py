@@ -152,10 +152,10 @@ def conversion_mseed_digital(fileName, tipoArchivo, tiempo_binario, datos_archiv
 
     if tipoArchivo == '1':
         # Archivos de registro continuo
-        fileNameCompleto = '/home/rsa/resultados/mseed/' + fileName
+        fileNameCompleto = '/home/rsa/projects/acelerografo-rsa/resultados/mseed/' + fileName
     elif tipoArchivo == '2':
         # Archivos de eventos extraídos
-        fileNameCompleto = '/home/rsa/resultados/eventos-extraidos/' + fileName
+        fileNameCompleto = '/home/rsa/projects/acelerografo-rsa/resultados/eventos-extraidos/' + fileName
     
     stData.write(fileNameCompleto, format='MSEED', encoding='STEIM1', reclen=512)
 
@@ -236,10 +236,10 @@ def main():
 
     tipoArchivo = sys.argv[1] 
 
-    config_mseed_path = '/home/rsa/configuracion/configuracion_mseed.json'
-    config_dispositivo_path = '/home/rsa/configuracion/configuracion_dispositivo.json'
-    archivoNombresArchivosRC = '/home/rsa/tmp/NombreArchivoRegistroContinuo.tmp'
-    archivoNombresArchivosEE = '/home/rsa/tmp/NombreArchivoEventoExtraido.tmp'
+    config_mseed_path = '/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_mseed.json'
+    config_dispositivo_path = '/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json'
+    archivoNombresArchivosRC = '/home/rsa/projects/acelerografo-rsa/tmp-files/NombreArchivoRegistroContinuo.tmp'
+    archivoNombresArchivosEE = '/home/rsa/projects/acelerografo-rsa/tmp-files/NombreArchivoEventoExtraido.tmp'
 
     # Lee el archivo de configuración mseed
     config_mseed = read_fileJSON(config_mseed_path)
@@ -284,11 +284,11 @@ def main():
 
     # Sube los archivos convertidos a Drive
     if tipoArchivo=='1':
-        subprocess.run(["python3", "/home/rsa/ejecutables/subir_archivo_drive.py", nombre_archivo_mseed, "3", "1"])
+        subprocess.run(["python3", "/home/rsa/projects/acelerografo-rsa/scripts/drive/subir_archivo.py", nombre_archivo_mseed, "3", "1"])
         time.sleep(5)
-        subprocess.run(["python3", "/home/rsa/ejecutables/subir_archivo_drive.py", nombreArchvioRegistroContinuo, "1", "0"])
+        subprocess.run(["python3", "/home/rsa/projects/acelerografo-rsa/scripts/drive/subir_archivo.py", nombreArchvioRegistroContinuo, "1", "0"])
     elif tipoArchivo=='2':
-        subprocess.run(["python3", "/home/rsa/ejecutables/subir_archivo_drive.py", nombre_archivo_mseed, "2", "1"])
+        subprocess.run(["python3", "/home/rsa/projects/acelerografo-rsa/scripts/drive/subir_archivo.py", nombre_archivo_mseed, "2", "1"])
 
 #######################################################################################################
 if __name__ == '__main__':

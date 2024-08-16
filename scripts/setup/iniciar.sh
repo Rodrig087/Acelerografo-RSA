@@ -4,8 +4,11 @@
 cp -r configuracion /home/rsa/
 
 # Crea los directorios necesarios
-mkdir -p /home/rsa/ejecutables
-mkdir -p /home/rsa/librerias
+mkdir -p /home/rsa/operation-scripts
+mkdir -p /home/rsa/operation-scripts/mqtt
+mkdir -p /home/rsa/operation-scripts/drive
+mkdir -p /home/rsa/operation-scripts/acelerografo
+mkdir -p /home/rsa/operation-scripts/acelerografo/libraries
 mkdir -p /home/rsa/log-files
 mkdir -p /home/rsa/tmp
 mkdir -p /home/rsa/resultados/eventos-detectados
@@ -20,7 +23,10 @@ echo 'nueva-estacion.txt' > /home/rsa/tmp/NombreArchivoRegistroContinuo.tmp
 # Compila todos los programas escritos en C 
 sh setup-scripts/compilar.sh
 
-# Copia los scripts de Python a la carpeta /home/rsa/ejecutables
+# Copia los scripts para mqtt
+cp /home/rsa/Acelerografo-RSA/scripts/operation/mqtt/SubirDirectorioDrive*.py /home/rsa/ejecutables/SubirDirectorioDrive.py
+
+# Copia los scripts para drive
 cp /home/rsa/Acelerografo-RSA/programas/SubirDirectorioDrive*.py /home/rsa/ejecutables/SubirDirectorioDrive.py
 cp /home/rsa/Acelerografo-RSA/programas/subir_archivo_drive*.py /home/rsa/ejecutables/SubirArchivoDrive.py
 cp /home/rsa/Acelerografo-RSA/programas/conversor_mseed*.py /home/rsa/ejecutables/ConversorMseed.py

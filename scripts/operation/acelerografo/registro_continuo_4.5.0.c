@@ -1,5 +1,5 @@
 // Compilar:
-// gcc -o /home/rsa/ejecutables/acelerografo /home/rsa/desarrollo/RegistroContinuo_*.c \
+// gcc -g -o /home/rsa/ejecutables/acelerografo /home/rsa/desarrollo/RegistroContinuo_*.c \
 -I/home/rsa/librerias/lector-json \
 -I/home/rsa/librerias/detector-eventos \
 -L/home/rsa/librerias/lector-json \
@@ -15,6 +15,11 @@
 #include <time.h>
 #include <sys/time.h>
 
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <signal.h>
+#include <stdbool.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <wiringPi.h>
@@ -22,6 +27,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+
+#define PIPE_NAME "/tmp/my_pipe"
 
 // Incluye las librerias de deteccion de eventos y de lectura del archivo json
 #include "lector_json.h"
@@ -38,6 +45,8 @@
 #define NUM_CICLOS 1
 #define FreqSPI 2000000
 
+
+
 // Declaracion de variables
 unsigned short i;
 unsigned int x;
@@ -51,10 +60,7 @@ unsigned char tiempoLocal[8];
 unsigned char tramaDatos[NUM_ELEMENTOS];
 
 // Variables para crear los archivos de datos:
-char filenameArchivoRegistroContinuo[100];
 char filenameTemporalRegistroContinuo[100];
-char filenameEventosDetectados[100];
-char filenameActualRegistroContinuo[100];
 
 char comando[40];
 char dateGPS[22];
@@ -79,18 +85,9 @@ long tiempoPicUNIX, tiempoRedUNIX, deltaUNIX;
 // Variables para extraer los datos de configuracion:
 char id[10];
 char deteccion_eventos[10];
-char registro_continuo[60];
-char eventos_detectados[60];
-char archivos_temporales[60];
-
-char extBin[5];
-char extTxt[5];
-char extTmp[5];
-char nombreActualARC[25];
-char nombreAnteriorARC[26];
+char publicacion_eventos[10];
 
 // Variables para crear los archivos de datos:
-char archivoRegistroContinuo[35];
 char temporalRegistroContinuo[35];
 char archivoEventoDetectado[35];
 char archivoActualRegistroContinuo[35];
@@ -106,6 +103,7 @@ int ComprobarNTP();
 
 // Metodos para la comunicacion con el dsPIC
 int ConfiguracionPrincipal();
+void handle_sigpipe(int sig);
 void LeerArchivoConfiguracion();
 void CrearArchivos();
 void GuardarVector(unsigned char *tramaD);
@@ -117,6 +115,7 @@ void EnviarTiempoLocal();                     // C:0xA4	F:0xF4
 void ObtenerTiempoPIC();                      // C:0xA5	F:0xF5
 void ObtenerReferenciaTiempo(int referencia); // C:0xA6	F:0xF6
 void SetRelojLocal(unsigned char *tramaTiempo);
+
 
 // Declaración global
 struct datos_config *datos_configuracion;
@@ -139,6 +138,7 @@ int main(void)
     banTiempoRed = 0;
     banTiempoRTC = 0;
 
+    
     // Realiza la configuracion principal:
     ConfiguracionPrincipal();
 
@@ -146,54 +146,56 @@ int main(void)
     banTiempoRed = ComprobarNTP();
 
     // Lee el archivo de configuracion en formato json
-    const char *filename = "/home/rsa/configuracion/configuracion_dispositivo.json";
+    printf("\nLeyendo archivo de configuracion...\n");
+    const char *filename = "/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json";
     struct datos_config *datos_configuracion = compilar_json(filename);
-
-    if (datos_configuracion != NULL)
+    if (datos_configuracion == NULL) {
+        fprintf(stderr, "Error al leer el archivo de configuracion JSON.\n");
+        return 1;
+    }
+    // Imprime los datos de configuracion recuperados del archivo JSON
+    printf("ID: %s\n", datos_configuracion->id);
+    printf("Fuente de reloj: %s\n", datos_configuracion->fuente_reloj);
+    printf("Deteccion de eventos: %s\n", datos_configuracion->deteccion_eventos);
+    
+ 
+    // Obtiene la referencia de tiempo | 0:RPi 1:GPS 2:RTC
+    int fuente_reloj = atoi(datos_configuracion->fuente_reloj); 
+    if (fuente_reloj == 0 || fuente_reloj == 1 || fuente_reloj == 2)
     {
-        printf("ID: %s\n", datos_configuracion->id);
-        printf("Fuente de reloj: %s\n", datos_configuracion->fuente_reloj);
-        printf("Deteccion de eventos: %s\n", datos_configuracion->deteccion_eventos);
-        printf("Path archivos temporales: %s\n", datos_configuracion->archivos_temporales);
-        printf("Path archivos registro continuo: %s\n", datos_configuracion->registro_continuo);
-        printf("Path eventos detectados: %s\n", datos_configuracion->eventos_detectados);
-
-        int fuente_reloj = atoi(datos_configuracion->fuente_reloj);     
-
-        // Asignar el valor a la variable global
-        strncpy(deteccion_eventos, datos_configuracion->deteccion_eventos, sizeof(deteccion_eventos) - 1);
-        deteccion_eventos[sizeof(deteccion_eventos) - 1] = '\0'; // Asegurar la terminación nula
-
-        // Obtiene la referencia de tiempo | 0:RPi 1:GPS 2:RTC
-        if (fuente_reloj == 0 || fuente_reloj == 1 || fuente_reloj == 2)
-        {
-            ObtenerReferenciaTiempo(fuente_reloj);
-        }
-        else
-        {
-            fprintf(stderr, "Error: No se pudo recuperar la fuente de reloj. Revise el archivo de configuracion.\n");
-            ObtenerReferenciaTiempo(0);
-        }
-
-        // Comprueba que la deteccion de eventos este habilitada en el archivo jason para lamar al metodo de inicializacion del filtro FIR
-        
-        if (strcmp(deteccion_eventos, "si") == 0){
-            firFloatInit();
-        } 
-        
-
-        free(datos_configuracion);
-
+        ObtenerReferenciaTiempo(fuente_reloj);
     }
     else
     {
-        fprintf(stderr, "Error: No se pudo leer el archivo de configuracion.\n");
+        fprintf(stderr, "Error: No se pudo recuperar la fuente de reloj. Revise el archivo de configuracion.\n");
+        ObtenerReferenciaTiempo(0);
     }
 
+    // Comprueba que la deteccion de eventos este habilitada en el archivo json para lamar al metodo de inicializacion del filtro FIR
+    strncpy(deteccion_eventos, datos_configuracion->deteccion_eventos, sizeof(deteccion_eventos) - 1);
+    deteccion_eventos[sizeof(deteccion_eventos) - 1] = '\0'; // Asegurar la terminación nula
+    if (strcmp(deteccion_eventos, "si") == 0){
+        firFloatInit();
+    } 
 
+    // Liberar la memoria del struct datos_config
+    free(datos_configuracion);
+
+    // Configurar el manejador de SIGPIPE
+    signal(SIGPIPE, handle_sigpipe);
+    // Crear el named pipe
+    if (mkfifo(PIPE_NAME, 0666) == -1) {
+        if (errno != EEXIST) {
+            perror("Error al crear el pipe");
+            exit(1);
+        }
+    }
+
+    // Bucle infinito
     while (1)
     {
-        delay(10);
+        //delay(10);
+        __asm__("nop");  // Instrucción "no operation" para evitar optimización excesiva
     }
 
     bcm2835_spi_end();
@@ -245,6 +247,11 @@ int ConfiguracionPrincipal()
     printf("****************************************\n");
 }
 
+
+void handle_sigpipe(int sig) {
+    printf("SIGPIPE caught. Reader probably disconnected.\n");
+}
+
 int ComprobarNTP()
 {
     char str1[5];
@@ -290,32 +297,44 @@ int ComprobarNTP()
 
 void CrearArchivos()
 {
-    // Se leen los datos de configuracion:
+    
+    char dir_registro_continuo[100];
+    char dir_eventos_detectados[100];
+    char dir_archivos_temporales[100];
+
+    char extBin[5];
+    char extTxt[5];
+    char extTmp[5];
+    char nombreActualARC[25];
+    char nombreAnteriorARC[26];
+    char timestamp[35];
+
+    char filenameArchivoRegistroContinuo[100];
+    char filenameEventosDetectados[100];
+    char filenameActualRegistroContinuo[100];
+    
+    
     printf("\nLeyendo archivo de configuracion...\n");
 
-    // Abre el fichero de datos de configuracion:
-    ficheroDatosConfiguracion = fopen("/home/rsa/configuracion/DatosConfiguracion.txt", "r");
-    // Recupera el contenido del archivo en la variable arg1 hasta que encuentra el carácter de fin de línea (\n):
-    // fgets(id, 10, ficheroDatosConfiguracion); //La funcion fgets lee el archivo linea por linea, esta parte es necesaria para saltar el encabezado del archivo
-    fgets(id, 10, ficheroDatosConfiguracion);
-    fgets(archivos_temporales, 60, ficheroDatosConfiguracion);
-    fgets(registro_continuo, 60, ficheroDatosConfiguracion);
-    fgets(eventos_detectados, 60, ficheroDatosConfiguracion);
-    // Cierra el fichero de informacion:
-    fclose(ficheroDatosConfiguracion);
+    // Abre y lee el archivo de configuración JSON
+    const char *filename = "/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json";
+    struct datos_config *config = compilar_json(filename);
+    if (config == NULL) {
+        fprintf(stderr, "Error al leer el archivo de configuracion JSON.\n");
+        return;
+    }
 
-    // Elimina el caracter de fin de linea (\n):
-    strtok(id, "\n");
-    strtok(registro_continuo, "\n");
-    strtok(eventos_detectados, "\n");
-    strtok(archivos_temporales, "\n");
-    // Elimina el caracter de retorno de carro (\r):
-    strtok(id, "\r");
-    strtok(registro_continuo, "\r");
-    strtok(eventos_detectados, "\r");
-    strtok(archivos_temporales, "\r");
+    // Asignar los valores leídos del archivo JSON a las variables correspondientes
+    strncpy(id, config->id, sizeof(id) - 1);
+    strncpy(dir_archivos_temporales, config->archivos_temporales, sizeof(dir_archivos_temporales) - 1);
+    strncpy(dir_registro_continuo, config->registro_continuo, sizeof(dir_registro_continuo) - 1);
+    strncpy(dir_eventos_detectados, config->eventos_detectados, sizeof(dir_eventos_detectados) - 1);
+    id[sizeof(id) - 1] = '\0';  // Asegurar la terminación nula
+    dir_archivos_temporales[sizeof(dir_archivos_temporales) - 1] = '\0';
+    dir_registro_continuo[sizeof(dir_registro_continuo) - 1] = '\0';
+    dir_eventos_detectados[sizeof(dir_eventos_detectados) - 1] = '\0';
 
-    // Asigna el texto correspondiente a los array de carateres:
+    // Asigna el texto correspondiente a los array de caracteres
     strcpy(extBin, ".dat");
     strcpy(extTxt, ".txt");
     strcpy(extTmp, ".tmp");
@@ -329,80 +348,70 @@ void CrearArchivos()
     t = time(NULL);
     tm = localtime(&t);
 
-    //*****************************************************************************
     // Crea el archivo binario para los datos de registro continuo:
-    // Establece la fecha y hora actual como nombre que tendra el archivo binario
-    strftime(archivoRegistroContinuo, 20, "%y%m%d-%H%M%S", tm);
-    // Realiza la concatenacion de array de caracteres
-    strcat(filenameArchivoRegistroContinuo, registro_continuo);
-    strcat(filenameArchivoRegistroContinuo, id);
-    strcat(filenameArchivoRegistroContinuo, archivoRegistroContinuo);
-    strcat(filenameArchivoRegistroContinuo, extBin);
+    strftime(timestamp, sizeof(timestamp), "%y%m%d-%H%M%S", tm);
+    snprintf(filenameArchivoRegistroContinuo, sizeof(filenameArchivoRegistroContinuo), "%s%s_%s%s", dir_registro_continuo, id, timestamp, extBin);
     printf("   %s\n", filenameArchivoRegistroContinuo);
-    // Crea el archivo binario en modo append
     fp = fopen(filenameArchivoRegistroContinuo, "ab+");
-    //*****************************************************************************
+    if (fp == NULL) {
+        fprintf(stderr, "Error al crear el archivo de registro continuo.\n");
+        free(config); // Liberar memoria en caso de error
+        return;
+    }
 
-    //*****************************************************************************
     // Crea el archivo temporal para los datos de registro continuo:
-    strcpy(temporalRegistroContinuo, "TramaTemporal");
-    strcat(filenameTemporalRegistroContinuo, archivos_temporales);
-    strcat(filenameTemporalRegistroContinuo, temporalRegistroContinuo);
-    strcat(filenameTemporalRegistroContinuo, extTmp);
-    // Crea el archivo de texto en modo sobrescritura
-    // fTramaTmp = fopen(filenameTemporalRegistroContinuo, "wb");
-    // printf("   %s\n",filenameTemporalRegistroContinuo);
-    //*******************************************
-    //*****************************************************************************
+    snprintf(filenameTemporalRegistroContinuo, sizeof(filenameTemporalRegistroContinuo), "%sTramaTemporal%s", dir_archivos_temporales, extTmp);
 
-    //*****************************************************************************
-    // Crea el archivo de texto para guardar los eventos detectados
-    strcpy(archivoEventoDetectado, "EventosDetectados");
-    strcat(filenameEventosDetectados, eventos_detectados);
-    strcat(filenameEventosDetectados, id);
-    strcat(filenameEventosDetectados, archivoEventoDetectado);
-    strcat(filenameEventosDetectados, extTxt);
-    // Crea el archivo de texto en modo append
-    obj_fp = fopen(filenameEventosDetectados, "a");
+    // Crea el archivo de texto para guardar los eventos detectados:
+    snprintf(filenameEventosDetectados, sizeof(filenameEventosDetectados), "%s%s_EventosDetectados%s",dir_eventos_detectados, id, extTxt);
     printf("   %s\n", filenameEventosDetectados);
-    //*****************************************************************************
+    obj_fp = fopen(filenameEventosDetectados, "a");
+    if (obj_fp == NULL) {
+        fprintf(stderr, "Error al crear el archivo de eventos detectados.\n");
+        fclose(fp); // Cerrar archivo abierto
+        free(config); // Liberar memoria en caso de error
+        return;
+    }
+    printf("   %s\n", filenameEventosDetectados);
 
-    //*****************************************************************************
-    // Crea el archivo temporal para guardar los nombres actual y anterior de los archivos RC
-    // Establece el nombre del archivo temporal:
-    strcpy(archivoActualRegistroContinuo, "NombreArchivoRegistroContinuo");
-    strcat(filenameActualRegistroContinuo, archivos_temporales);
-    strcat(filenameActualRegistroContinuo, archivoActualRegistroContinuo);
-    strcat(filenameActualRegistroContinuo, extTmp);
-    // Abre el archivo temporal en modo lectura (El archivo debe existir):
+    // Crea el archivo temporal para guardar los nombres actual y anterior de los archivos RC:
+    snprintf(filenameActualRegistroContinuo, sizeof(filenameActualRegistroContinuo), "%sNombreArchivoRegistroContinuo%s", dir_archivos_temporales, extTmp);
+    printf("   %s\n", filenameActualRegistroContinuo);
     ftmp = fopen(filenameActualRegistroContinuo, "rt");
-    // Recupera el nombre del archivo anterior (Lee solo la primera fila del archivo temporal):
-    fgets(nombreAnteriorARC, 26, ftmp);
-    // Cierra el archivo temporal:
+    if (ftmp == NULL) {
+        fprintf(stderr, "Error al abrir el archivo temporal para nombres de archivos RC.\n");
+        fclose(fp); // Cerrar archivo abierto
+        fclose(obj_fp); // Cerrar archivo abierto
+        free(config); // Liberar memoria en caso de error
+        return;
+    }
+    fgets(nombreAnteriorARC, sizeof(nombreAnteriorARC), ftmp);
     fclose(ftmp);
 
-    // Abre el archivo temporal en modo escritura:
     ftmp = fopen(filenameActualRegistroContinuo, "w+");
-    // printf("   %s\n",filenameActualRegistroContinuo);
+    if (ftmp == NULL) {
+        fprintf(stderr, "Error al abrir el archivo temporal para escritura de nombres de archivos RC.\n");
+        fclose(fp); // Cerrar archivo abierto
+        fclose(obj_fp); // Cerrar archivo abierto
+        free(config); // Liberar memoria en caso de error
+        return;
+    }
 
-    // Establece el nombre del archivo RC actual (es el mismo nombre sin el path):
-    strcat(nombreActualARC, id);
-    strcat(nombreActualARC, archivoRegistroContinuo);
-    strcat(nombreActualARC, extBin);
-    strcat(nombreActualARC, "\n");
+    snprintf(nombreActualARC, sizeof(nombreActualARC), "%s_%s%s\n", id, timestamp, extBin);
 
-    // Escribe el nombre del archivo RC actual en el archivo temporal:
-    fwrite(nombreActualARC, sizeof(char), 24, ftmp);
-    // Escribe el nombre del archivo RC anterior en el archivo temporal:
-    fwrite(nombreAnteriorARC, sizeof(char), 24, ftmp);
+    fwrite(nombreActualARC, sizeof(char), strlen(nombreActualARC), ftmp);
+    fwrite(nombreAnteriorARC, sizeof(char), strlen(nombreAnteriorARC), ftmp);
 
     printf("\nArchivo RC Actual: %s", nombreActualARC);
     printf("Archivo RC Anterior: %s\n\n", nombreAnteriorARC);
 
-    // Cierra el archivo temporal:
     fclose(ftmp);
-    //*****************************************************************************
+
+    // Liberar la memoria del struct datos_config
+    free(config);
 }
+
+
 
 //**************************************************************************************************************************************
 // Comunicacion RPi-dsPIC:
@@ -599,46 +608,6 @@ void ObtenerTiempoPIC()
     printf("Tiempo UNIX dsPIC: %d\n", tiempoPicUNIX);
     printf("****************************************\n");
 
-    /*
-    // Comprueba si se recibio cualquier fuente de reloj proveniente del RTC del dsPIC:
-    if (fuenteTiempoPic == 2 || fuenteTiempoPic == 4 || fuenteTiempoPic == 5)
-    {
-        // Comprueba que la hora de Red sea confiable:
-        if (banTiempoRed == 1)
-        {
-            // Comprueba que la diferencia entre el tiempo de Red y el tiempo del RTC no sea mayor a 10 segundos:
-            deltaUNIX = abs(tiempoRedUNIX - tiempoPicUNIX);
-            if (deltaUNIX > 10)
-            {
-                // Envia la hora de la Red al dsPIC:
-                printf("Hora RTC no valida. Enviando hora de Red...\n");
-                fuenteTiempo = 0; // 0:RPi 1:GPS 2:RTC
-                ObtenerReferenciaTiempo(fuenteTiempo);
-            }
-            else
-            {
-                printf("Hora RTC valida.\n");
-                // Crea los archivos e inicia el muestreo:
-                CrearArchivos();
-                IniciarMuestreo();
-            }
-        }
-        else
-        {
-            // Si la hora de Red no es confiable, utiliza la hora del RTC:
-            SetRelojLocal(tiempoPIC);
-            // Crea los archivos e inicia el muestreo:
-            CrearArchivos();
-            IniciarMuestreo();
-        }
-    }
-    else
-    {
-        CrearArchivos();
-        IniciarMuestreo();
-    }
-    */
-
     CrearArchivos();
     IniciarMuestreo();
 }
@@ -674,44 +643,49 @@ void ObtenerReferenciaTiempo(int referencia)
 }
 //**************************************************************************************************************************************
 
-// Esta funcion sirve para guardar en el archivo binario las tramas de 1 segundo recibidas
-void GuardarVector(unsigned char *tramaD)
-{
-    unsigned int outFwrite;
-    unsigned int tmpFwrite;
 
-    // Guarda la trama en el archivo de registro continuo
-    if (fp != NULL)
-    {
-        do
-        {
-            // Guarda la trama en el archivo binario:
+
+// Esta funcion sirve para guardar en el archivo binario las tramas de 1 segundo recibidas
+void GuardarVector(unsigned char *tramaD) {
+    
+    // Guardar la trama en el archivo de registro continuo
+    if (fp != NULL) {
+        size_t outFwrite;
+        do {
             outFwrite = fwrite(tramaD, sizeof(char), NUM_ELEMENTOS, fp);
-            // Guarda la trama en el archivo temporal:
-            // fTramaTmp = fopen(filenameTemporalRegistroContinuo, "wb");
-            // tmpFwrite = fwrite(tramaD, sizeof(char), NUM_ELEMENTOS, fTramaTmp);
-            // fclose(fTramaTmp); */
-            // Ejecuta el script de python:
-            // system("python /home/rsa/Programas/RegistroContinuo/V3/BinarioToMiniSeed_V12.py");
         } while (outFwrite != NUM_ELEMENTOS);
         fflush(fp);
     }
-
-    // Guarda la trama en el archivo temporal
-
-    fTramaTmp = fopen(filenameTemporalRegistroContinuo, "wb");
-    if (fTramaTmp != NULL)
-    {
-        do
-        {
-            tmpFwrite = fwrite(tramaD, sizeof(char), NUM_ELEMENTOS, fTramaTmp);
-
-        } while (tmpFwrite != NUM_ELEMENTOS);
-
-        fflush(fTramaTmp);
-        fclose(fTramaTmp);
+    
+    // Escribir en el pipe
+    int fd;
+    //printf("Abriendo pipe para escritura...\n");
+    fd = open(PIPE_NAME, O_WRONLY | O_NONBLOCK);
+    
+    if (fd == -1) {
+        if (errno == ENXIO) {
+            //printf("No hay lector. No se puede escribir.\n");
+            return;
+        } else {
+            //perror("Error al abrir el pipe");
+            return;
+        }
     }
+    //printf("Escribiendo datos...\n");
+    ssize_t bytes_written = write(fd, tramaD, NUM_ELEMENTOS);
+    if (bytes_written == -1) {
+        if (errno == EPIPE) {
+            //printf("El lector se desconectó.\n");
+        } else {
+            //perror("Error al escribir en el pipe");
+        }
+    } else {
+        //printf("Escritos %zd bytes\n", bytes_written);
+    }
+    close(fd);
+
 }
+
 
 void SetRelojLocal(unsigned char *tramaTiempo)
 {

@@ -132,10 +132,10 @@ def main():
     tipo_archivo = sys.argv[2] 
     borrar_despues = sys.argv[3]
 
-    config_dispositivo_path = '/home/rsa/configuracion/configuracion_dispositivo.json'
-    credentials_file = '/home/rsa/configuracion/drive_credentials.json'
-    token_file = '/home/rsa/configuracion/drive_token.json'
-    log_directory = '/home/rsa/log-files/'
+    config_dispositivo_path = '/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json'
+    credentials_file = '/home/rsa/projects/acelerografo-rsa/configuracion/drive_credentials.json'
+    token_file = '/home/rsa/projects/acelerografo-rsa/configuracion/drive_token.json'
+    log_directory = '/home/rsa/projects/acelerografo-rsa/log-files/'
 
     # Lee el archivo de configuración del dispositivo
     config_dispositivo = read_fileJSON(config_dispositivo_path)
