@@ -4,7 +4,7 @@
 0 */6 * * * /usr/local/bin/registrocontinuo start
 
 # Resetea el circuito al iniciar el sistem:
-@reboot sleep 60 && /usr/local/resetmaster
+@reboot sleep 60 && /usr/local/bin/resetmaster
 
 # Espera 90 segundos al arranque del sistema para ejecutar el registro continuo:
 @reboot sleep 90 && /usr/local/bin/registrocontinuo start

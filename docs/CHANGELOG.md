@@ -52,6 +52,6 @@
   - Verifica si hay cambios en los archivos de `acelerografo` y `libraries` y ejecuta `make` si es necesario.
   - Imprime una lista de los archivos que fueron actualizados durante el proceso.
 
-  ## 2024-08-19 - scripts/operation/acelerografo/comprobar_registro_5.0.0.c
-  ### Cambios 
-  - Se cambió la lectura de parametros del dispositivo de un archivo txt a un archivo json.
+## 2024-08-19 - scripts/operation/acelerografo/comprobar_registro_5.0.0.c
+### Cambios 
+- Se cambió la lectura de parametros del dispositivo de un archivo txt a un archivo json.
