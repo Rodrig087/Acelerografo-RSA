@@ -37,8 +37,8 @@ $(LIB_DIR_DST)/liblector_json.so: $(LIB_DIR_DST)/lector_json.o
 registro_continuo: $(PROG_DIR)/registro_continuo*.c $(LIB_DIR_DST)/libdetector_eventos.so $(LIB_DIR_DST)/liblector_json.so
 	$(CC) $(CFLAGS) -I$(LIB_DIR_DST) -o $(EXE_DIR)/registro_continuo $(PROG_DIR)/registro_continuo*.c -ldetector_eventos -llector_json -lbcm2835 -lwiringPi -lm
 
-comprobar_registro: $(PROG_DIR)/comprobar_registro*.c
-	$(CC) -o $(EXE_DIR)/comprobar_registro $(PROG_DIR)/comprobar_registro*.c
+comprobar_registro: $(PROG_DIR)/comprobar_registro*.c $(LIB_DIR_DST)/liblector_json.so
+	$(CC) $(CFLAGS) -I$(LIB_DIR_DST) -o $(EXE_DIR)/comprobar_registro $(PROG_DIR)/comprobar_registro*.c -llector_json
 
 extraer_evento: $(PROG_DIR)/extraer_evento*.c
 	$(CC) -o $(EXE_DIR)/extraer_evento $(PROG_DIR)/extraer_evento*.c

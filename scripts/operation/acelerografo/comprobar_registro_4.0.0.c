@@ -7,6 +7,9 @@
 #include <time.h>
 #include <unistd.h>
 
+// Incluye las librerias de lectura del archivo json
+#include "lector_json.h"
+
 const int tramaSize = 2506;
 #define NUM_MUESTRAS 249
 
@@ -33,10 +36,11 @@ char idEstacion[10];
 char pathTMP[60];
 char pathRegistroContinuo[60];
 char nombreActualARC[25];
+char filenameArchivoTemporal[100];
 char filenameActualRegistroContinuo[100];
 
 FILE *ficheroDatosConfiguracion;
-FILE *tmpf;
+FILE *ftmp;
 FILE *lf;
 
 unsigned int segInicio;
@@ -55,7 +59,12 @@ double xAceleracion;
 double yAceleracion;
 double zAceleracion;
 
-int main()
+char id[10];
+char dir_archivos_temporales[100];
+char dir_registro_continuo[100];
+struct datos_config *datos_configuracion;
+
+int main(void)
 {
 
     // Obtiene la hora y la fecha del sistema:
@@ -72,6 +81,7 @@ int main()
     printf("\nTiempo del sistema:\n");
     printf("%s\n", formattedTime);
 
+    /*
     // Abre el fichero de datos de configuracion:
     ficheroDatosConfiguracion = fopen("/home/rsa/configuracion/DatosConfiguracion.txt", "r");
     fgets(idEstacion, 10, ficheroDatosConfiguracion);
@@ -79,7 +89,6 @@ int main()
     fgets(pathRegistroContinuo, 60, ficheroDatosConfiguracion);
     // Cierra el fichero de informacion:
     fclose(ficheroDatosConfiguracion);
-
     // Elimina el caracter de fin de linea (\n):
     strtok(idEstacion, "\n");
     strtok(pathRegistroContinuo, "\n");
@@ -88,24 +97,57 @@ int main()
     strtok(idEstacion, "\r");
     strtok(pathRegistroContinuo, "\r");
     strtok(pathTMP, "\r");
-
     // Abre el archivo temporal en modo lectura
     tmpf = fopen("/home/rsa/tmp/NombreArchivoRegistroContinuo.tmp", "r");
     fgets(nombreActualARC, 25, tmpf);
     strtok(nombreActualARC, "\n");
     strtok(nombreActualARC, "\r");
     fclose(tmpf);
-
     // Incluye el path del nombre del archivo actual RC:
     strcat(filenameActualRegistroContinuo, pathRegistroContinuo);
     strcat(filenameActualRegistroContinuo, nombreActualARC);
-
     // const char *filenameActualRegistroContinuo = "/home/rsa/resultados/registro-continuo/TST00_230907-120002.dat";
-
-    FILE *lf = fopen(filenameActualRegistroContinuo, "rb");
-    if (!lf)
+    */
+    
+    //********************************************************************************************************
+    // Abre y lee el archivo de configuración JSON
+    const char *filename = "/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json";
+    struct datos_config *config = compilar_json(filename);
+    if (config == NULL) {
+        fprintf(stderr, "Error al leer el archivo de configuracion JSON.\n");
+        return 1;
+    }
+    // Asignar los valores leídos del archivo JSON a las variables correspondientes:
+    strncpy(id, config->id, sizeof(id) - 1);
+    strncpy(dir_archivos_temporales, config->archivos_temporales, sizeof(dir_archivos_temporales) - 1);
+    strncpy(dir_registro_continuo, config->registro_continuo, sizeof(dir_registro_continuo) - 1);
+    // Asegurar la terminación nula:
+    id[sizeof(id) - 1] = '\0';  
+    dir_archivos_temporales[sizeof(dir_archivos_temporales) - 1] = '\0';
+    dir_registro_continuo[sizeof(dir_registro_continuo) - 1] = '\0';
+    // Abre el archivo temporal para leer el nombre del archivo RC actual:
+    snprintf(filenameArchivoTemporal, sizeof(filenameArchivoTemporal), "%sNombreArchivoRegistroContinuo.tmp", dir_archivos_temporales);
+    printf("   %s\n", filenameArchivoTemporal);
+    ftmp = fopen(filenameArchivoTemporal, "rt");
+    if (ftmp == NULL) {
+        fprintf(stderr, "Error al abrir el archivo temporal para nombres de archivos RC.\n");
+        free(config); // Liberar memoria en caso de error
+        return 1;
+    }
+    fgets(nombreActualARC, sizeof(nombreActualARC), ftmp);
+    nombreActualARC[strcspn(nombreActualARC, "\r\n")] = 0; // Asegurar la terminación nula
+    fclose(ftmp);
+    snprintf(filenameActualRegistroContinuo, sizeof(filenameActualRegistroContinuo), "%s%s", dir_registro_continuo, nombreActualARC);
+    
+    printf("Archivo actual: '%s'\n", nombreActualARC);
+    printf("Ruta completa del archivo: '%s'\n", filenameActualRegistroContinuo);
+    //********************************************************************************************************
+    
+    lf = fopen(filenameActualRegistroContinuo, "rb");
+    if (lf == NULL)
     {
-        printf("No se pudo abrir el archivo.\n");
+        fprintf(stderr,"No se pudo abrir el archivo.\n");
+        free(config); // Liberar memoria en caso de error
         return 1;
     }
 
@@ -233,6 +275,9 @@ int main()
     }
 
     fclose(lf);
+
+    // Liberar la memoria del struct datos_config
+    free(config);
 
     return 0;
 }
