@@ -81,34 +81,6 @@ int main(void)
     printf("\nTiempo del sistema:\n");
     printf("%s\n", formattedTime);
 
-    /*
-    // Abre el fichero de datos de configuracion:
-    ficheroDatosConfiguracion = fopen("/home/rsa/configuracion/DatosConfiguracion.txt", "r");
-    fgets(idEstacion, 10, ficheroDatosConfiguracion);
-    fgets(pathTMP, 60, ficheroDatosConfiguracion);
-    fgets(pathRegistroContinuo, 60, ficheroDatosConfiguracion);
-    // Cierra el fichero de informacion:
-    fclose(ficheroDatosConfiguracion);
-    // Elimina el caracter de fin de linea (\n):
-    strtok(idEstacion, "\n");
-    strtok(pathRegistroContinuo, "\n");
-    strtok(pathTMP, "\n");
-    // Elimina el caracter de retorno de carro (\r):
-    strtok(idEstacion, "\r");
-    strtok(pathRegistroContinuo, "\r");
-    strtok(pathTMP, "\r");
-    // Abre el archivo temporal en modo lectura
-    tmpf = fopen("/home/rsa/tmp/NombreArchivoRegistroContinuo.tmp", "r");
-    fgets(nombreActualARC, 25, tmpf);
-    strtok(nombreActualARC, "\n");
-    strtok(nombreActualARC, "\r");
-    fclose(tmpf);
-    // Incluye el path del nombre del archivo actual RC:
-    strcat(filenameActualRegistroContinuo, pathRegistroContinuo);
-    strcat(filenameActualRegistroContinuo, nombreActualARC);
-    // const char *filenameActualRegistroContinuo = "/home/rsa/resultados/registro-continuo/TST00_230907-120002.dat";
-    */
-    
     //********************************************************************************************************
     // Abre y lee el archivo de configuración JSON
     const char *filename = "/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json";
@@ -127,7 +99,7 @@ int main(void)
     dir_registro_continuo[sizeof(dir_registro_continuo) - 1] = '\0';
     // Abre el archivo temporal para leer el nombre del archivo RC actual:
     snprintf(filenameArchivoTemporal, sizeof(filenameArchivoTemporal), "%sNombreArchivoRegistroContinuo.tmp", dir_archivos_temporales);
-    printf("   %s\n", filenameArchivoTemporal);
+    //printf("   %s\n", filenameArchivoTemporal);
     ftmp = fopen(filenameArchivoTemporal, "rt");
     if (ftmp == NULL) {
         fprintf(stderr, "Error al abrir el archivo temporal para nombres de archivos RC.\n");
@@ -139,8 +111,8 @@ int main(void)
     fclose(ftmp);
     snprintf(filenameActualRegistroContinuo, sizeof(filenameActualRegistroContinuo), "%s%s", dir_registro_continuo, nombreActualARC);
     
-    printf("Archivo actual: '%s'\n", nombreActualARC);
-    printf("Ruta completa del archivo: '%s'\n", filenameActualRegistroContinuo);
+    printf("\nArchivo actual: '%s'\n", nombreActualARC);
+    //printf("Ruta completa del archivo: '%s'\n", filenameActualRegistroContinuo);
     //********************************************************************************************************
     
     lf = fopen(filenameActualRegistroContinuo, "rb");
@@ -151,13 +123,10 @@ int main(void)
         return 1;
     }
 
-    printf("\nArchivo actual: ");
-    printf(nombreActualARC);
-
     // Calcula el tamaño total del archivo
     fseek(lf, 0, SEEK_END);
     long fileSize = ftell(lf);
-    printf("\nTamaño del archivo:%d\n", fileSize);
+    printf("Tamaño del archivo:%d\n", fileSize);
 
     // Calcula el índice de la última trama
     long lastFrameIndex = (fileSize / tramaSize) - 1;
