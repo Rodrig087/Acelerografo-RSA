@@ -5,24 +5,36 @@ USER_HOME=$(eval echo ~$SUDO_USER)  # Obtiene el home del usuario original cuand
 PROJECT_GIT_ROOT="$USER_HOME/git/Acelerografo-RSA"
 PROJECT_LOCAL_ROOT="$USER_HOME/projects/acelerografo-rsa"
 
-# Función para actualizar archivos si han cambiado
+# Función para actualizar archivos si han cambiado, ignorando la versión en el nombre de los archivos de destino
 function update_files_if_changed {
-    local src_dir=$1
-    local dest_dir=$2
+    local src_dir=$(echo "$1" | sed 's:/*$::')
+    local dest_dir=$(echo "$2" | sed 's:/*$::')
+    local changes_detected=false
 
     for src_file in $(find $src_dir -type f); do
-        dest_file="${src_file/$src_dir/$dest_dir}"
+        # Eliminar la versión del nombre del archivo de origen para construir el nombre de destino
+        base_name=$(basename "$src_file")
+        base_name_no_version=$(echo "$base_name" | sed -r 's/_[0-9]+\.[0-9]+\.[0-9]+//')
+        dest_file="$dest_dir/$base_name_no_version"
+
         if [ ! -f "$dest_file" ] || [ "$src_file" -nt "$dest_file" ]; then
             echo "Actualizando: $dest_file"
             cp "$src_file" "$dest_file"
+            changes_detected=true
         fi
     done
+
+    if [ "$changes_detected" = false ]; then
+        echo "No se detectaron cambios en $dest_dir"
+    fi
 }
+
 
 # Función para actualizar task-scripts en /usr/local/bin
 function update_task_scripts {
     local src_dir=$1
     local dest_dir="/usr/local/bin"
+    local task_changes_detected=false
 
     for script in $(find $src_dir -name "*.sh" -type f); do
         script_name=$(basename "$script" .sh)
@@ -31,8 +43,13 @@ function update_task_scripts {
             echo "Actualizando: $dest_file"
             sudo cp "$script" "$dest_file"
             sudo chmod +x "$dest_file"
+            task_changes_detected=true
         fi
     done
+
+    if [ "$task_changes_detected" = false ]; then
+        echo "No se detectaron cambios en los task-scripts"
+    fi
 }
 
 # Revisar y actualizar archivos en configuración, mqtt, mseed, drive
@@ -51,7 +68,7 @@ if [ "$(find $PROJECT_GIT_ROOT/scripts/operation/acelerografo/ -type f -newer $P
     cd $PROJECT_GIT_ROOT/scripts/setup/
     make
 else
-    echo "No se detectaron cambios en acelerografo o libraries."
+    echo "No se detectaron cambios en los acelerografo-scripts o sus librerias."
 fi
 
 echo "Actualización completada con éxito."
