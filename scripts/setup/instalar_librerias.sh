@@ -1,7 +1,10 @@
 #!/bin/bash
 
+# Instalacion libreria WirinPi
+cd $PROJECT_GIT_ROOT/main-libraries
+sudo dpkg -i wiringpi-latest.deb
+
 # Instalacion libreria bcm2835
-cd librerias
 tar zxvf bcm2835-1.58.tar.gz
 cd bcm2835-1.58
 ./configure
@@ -17,6 +20,6 @@ sudo pip3 install --upgrade google-api-python-client google-auth-httplib2 google
 sudo pip3 install --upgrade oauth2client
 
 # Instalacion libreria WirinPi
-cd /tmp
-wget https://project-downloads.drogon.net/wiringpi-latest.deb
-sudo dpkg -i wiringpi-latest.deb
+#cd /tmp
+#wget https://project-downloads.drogon.net/wiringpi-latest.deb
+#sudo dpkg -i wiringpi-latest.deb

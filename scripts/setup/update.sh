@@ -1,9 +1,12 @@
 #!/bin/bash
 
 # Definir la raíz del proyecto en Git y el proyecto local
-USER_HOME=$(eval echo ~$SUDO_USER)  # Obtiene el home del usuario original cuando se usa sudo
-PROJECT_GIT_ROOT="$USER_HOME/git/Acelerografo-RSA"
-PROJECT_LOCAL_ROOT="$USER_HOME/projects/acelerografo-rsa"
+#USER_HOME=$(eval echo ~$SUDO_USER)  # Obtiene el home del usuario original cuando se usa sudo
+#PROJECT_GIT_ROOT="$USER_HOME/git/Acelerografo-RSA"
+#PROJECT_LOCAL_ROOT="$USER_HOME/projects/acelerografo-rsa"
+
+echo "Usando la ruta del repositorio Git: $PROJECT_GIT_ROOT"
+echo "Usando la ruta del proyecto local: $PROJECT_LOCAL_ROOT"
 
 # Función para actualizar archivos si han cambiado, ignorando la versión en el nombre de los archivos de destino
 function update_files_if_changed {

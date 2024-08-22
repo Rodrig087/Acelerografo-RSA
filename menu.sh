@@ -6,12 +6,11 @@ show_menu() {
   echo "*****************************************************************"
   echo "Bienvenido al menú de configuración"
   echo "*****************************************************************"
-  echo "0. Preparar setup-scripts"
+  echo "0. Establecer variables de entorno"
   echo "1. Instalar librerías"
-  echo "2. Preparar el entorno"
-  echo "3. Compilar scripts C"
-  echo "4. Actualizar"
-  echo "5. Salir"
+  echo "2. Desplegar el proyecto"
+  echo "3. Actualizar el proyecto"
+  echo "4. Salir"
   read -p "Ingrese el número de opción que desea ejecutar: " option
 }
 
@@ -23,14 +22,16 @@ while true; do
   # Ejecutar el script correspondiente según la opción seleccionada
   case $option in
     0)
-      echo "Preparando setup-scripts..."
-      chmod +x setup-scripts/instalar-librerias.sh
-      chmod +x setup-scripts/iniciar.sh
-      chmod +x setup-scripts/compilar.sh
+      echo "Preparando las variables de entorno..."
+      sudo cp scripts/env/project_paths.sh /etc/profile.d/project_paths.sh
+      sudo chmod +x /etc/profile.d/project_paths.sh
+      source /etc/profile.d/project_paths.sh
+      echo "Raiz del repositorio Git: $PROJECT_GIT_ROOT"
+      echo "Raiz del proyecto local: $PROJECT_LOCAL_ROOT"
       ;;
     1)
       echo "Instalado librerias necesarias..."
-      sh setup-scripts/instalar-librerias.sh
+      bash scripts/setup/instalar-librerias.sh
       ;;
     2)
       echo "Advertencia: Esta opción debe ejecutarse únicamente durante la configuración inicial de una nueva estación."
@@ -38,8 +39,8 @@ while true; do
       read -p "Desea continuar? (s/n) " response
       case "$response" in
         s|S)
-            echo "Preparando el entorno..."
-            sh setup-scripts/iniciar.sh
+            echo "Desplegando un proyecto nuevo..."
+            bash scripts/setup/deploy.sh
             break
             ;;
         n|N)
@@ -50,14 +51,10 @@ while true; do
       esac
       ;;
     3)
-      echo "Compilando..."
-      sh setup-scripts/compilar.sh
+      echo "Actualizando el proyecto.."
+      bash scripts/setup/update.sh
       ;;
     4)
-      echo "Actualizando.."
-      sh setup-scripts/actualizar.sh
-      ;;
-    5)
       echo "Saliendo del programa..."
       echo "*****************************************************************"
       echo " "
