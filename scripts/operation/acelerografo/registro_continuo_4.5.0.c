@@ -1,14 +1,3 @@
-// Compilar:
-// gcc -g -o /home/rsa/ejecutables/acelerografo /home/rsa/desarrollo/RegistroContinuo_*.c \
--I/home/rsa/librerias/lector-json \
--I/home/rsa/librerias/detector-eventos \
--L/home/rsa/librerias/lector-json \
--L/home/rsa/librerias/detector-eventos \
--llector_json -ldetector_eventos \
--Wl,-rpath,/home/rsa/librerias/lector-json \
--Wl,-rpath,/home/rsa/librerias/detector-eventos \
--lbcm2835 -lwiringPi -lm -ljansson
-//
 
 // Para manejo del tiempo
 #define _XOPEN_SOURCE // Debe ir en la primera linea
@@ -98,6 +87,8 @@ FILE *fTramaTmp;
 FILE *ficheroDatosConfiguracion;
 FILE *obj_fp;
 
+const char *config_filename;
+
 // Metodo para manejar el tiempo del sistema
 int ComprobarNTP();
 
@@ -145,10 +136,19 @@ int main(void)
     // Comprueba si el equipo esta sincronizado con el tiempo de red:
     banTiempoRed = ComprobarNTP();
 
+    // Inicializa la variable config_filename considerando la variable de entorno de la raiz del proyecto
+    const char *project_root = getenv("PROJECT_LOCAL_ROOT");
+    if (project_root == NULL) {
+        fprintf(stderr, "Error: La variable de entorno PROJECT_LOCAL_ROOT no está configurada.\n");
+        return 1;
+    }
+    static char config_path[256];
+    snprintf(config_path, sizeof(config_path), "%s/configuracion/configuracion_dispositivo.json", project_root);
+    config_filename = config_path;
+
     // Lee el archivo de configuracion en formato json
     printf("\nLeyendo archivo de configuracion...\n");
-    const char *filename = "/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json";
-    struct datos_config *datos_configuracion = compilar_json(filename);
+    struct datos_config *datos_configuracion = compilar_json(config_filename);
     if (datos_configuracion == NULL) {
         fprintf(stderr, "Error al leer el archivo de configuracion JSON.\n");
         return 1;
@@ -317,8 +317,7 @@ void CrearArchivos()
     printf("\nLeyendo archivo de configuracion...\n");
 
     // Abre y lee el archivo de configuración JSON
-    const char *filename = "/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json";
-    struct datos_config *config = compilar_json(filename);
+    struct datos_config *config = compilar_json(config_filename);
     if (config == NULL) {
         fprintf(stderr, "Error al leer el archivo de configuracion JSON.\n");
         return;

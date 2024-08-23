@@ -24,7 +24,9 @@ while true; do
     0)
       echo "Preparando las variables de entorno..."
       sudo cp scripts/env/project_paths.sh /etc/profile.d/project_paths.sh
+      sudo cp scripts/env/project_paths.sh /usr/local/bin/project_paths
       sudo chmod +x /etc/profile.d/project_paths.sh
+      sudo chmod +x /usr/local/bin/project_paths
       source /etc/profile.d/project_paths.sh
       echo "Raiz del repositorio Git: $PROJECT_GIT_ROOT"
       echo "Raiz del proyecto local: $PROJECT_LOCAL_ROOT"
