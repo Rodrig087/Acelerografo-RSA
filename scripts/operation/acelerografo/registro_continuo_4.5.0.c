@@ -137,13 +137,13 @@ int main(void)
     banTiempoRed = ComprobarNTP();
 
     // Inicializa la variable config_filename considerando la variable de entorno de la raiz del proyecto
-    const char *project_root = getenv("PROJECT_LOCAL_ROOT");
-    if (project_root == NULL) {
+    const char *project_local_root = getenv("PROJECT_LOCAL_ROOT");
+    if (project_local_root == NULL) {
         fprintf(stderr, "Error: La variable de entorno PROJECT_LOCAL_ROOT no está configurada.\n");
         return 1;
     }
     static char config_path[256];
-    snprintf(config_path, sizeof(config_path), "%s/configuracion/configuracion_dispositivo.json", project_root);
+    snprintf(config_path, sizeof(config_path), "%s/configuracion/configuracion_dispositivo.json", project_local_root);
     config_filename = config_path;
 
     // Lee el archivo de configuracion en formato json

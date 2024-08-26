@@ -61,7 +61,7 @@ double zAceleracion;
 char id[10];
 char dir_archivos_temporales[100];
 char dir_registro_continuo[100];
-char configuracion_dispositivo_filename[100];
+const char *config_filename;
 struct datos_config *datos_configuracion;
 
 int main(void)
@@ -82,20 +82,18 @@ int main(void)
     printf("%s\n", formattedTime);
 
     //********************************************************************************************************
-    // Recupera el nombre del archivo de configuracion del dispositivo:
-    char* project_local_root = getenv("PROJECT_LOCAL_ROOT");
-    if (project_local_root != NULL) {
-        // Concatenar PROJECT_LOCAL_CONFIG con "/configuracion_dispositivo.json"
-        const char* file_suffix = "/configuracion/configuracion_dispositivo.json";        
-        // Inicializar la cadena
-        strcpy(configuracion_dispositivo_filename, project_local_root);
-        strcat(configuracion_dispositivo_filename, file_suffix);
-    } else {
-        fprintf(stderr, "Error al leer las variables de entorno.\n");
+    // Inicializa la variable config_filename considerando la variable de entorno de la raiz del proyecto
+    const char *project_local_root = getenv("PROJECT_LOCAL_ROOT");
+    if (project_local_root == NULL) {
+        fprintf(stderr, "Error: La variable de entorno PROJECT_LOCAL_ROOT no está configurada.\n");
         return 1;
-    }   
+    }
+    static char config_path[256];
+    snprintf(config_path, sizeof(config_path), "%s/configuracion/configuracion_dispositivo.json", project_local_root);
+    config_filename = config_path;   
+
     // Abre y lee el archivo de configuración del dispositivo:
-    struct datos_config *config = compilar_json(configuracion_dispositivo_filename);
+    struct datos_config *config = compilar_json(config_filename);
     if (config == NULL) {
         fprintf(stderr, "Error al leer el archivo de configuracion JSON.\n");
         return 1;
