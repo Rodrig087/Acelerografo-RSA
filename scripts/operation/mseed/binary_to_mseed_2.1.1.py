@@ -1,6 +1,7 @@
 ######################################### ~Librerias~ #################################################
 import numpy as np
 from obspy import UTCDateTime, read, Trace, Stream
+import os
 import subprocess
 import time
 import sys
@@ -139,7 +140,7 @@ def nombrar_archivo_mseed(codigo_estacion,tiempo_binario):
     
 
 # Convierte los datos procesados del archivo binario a formato Mini-SEED y los guarda con el nombre especificado.
-def conversion_mseed_digital(fileName, tipoArchivo, tiempo_binario, datos_archivo_binario, segundos_faltantes, parametros_mseed):
+def conversion_mseed_digital(fileName, path, tiempo_binario, datos_archivo_binario, segundos_faltantes, parametros_mseed):
     nombre = parametros_mseed["SENSOR(2)"]
 
     # Crear trazas para cada canal
@@ -150,14 +151,19 @@ def conversion_mseed_digital(fileName, tipoArchivo, tiempo_binario, datos_archiv
     # Crear un objeto Stream con las trazas
     stData = Stream(traces=[trazaCH1, trazaCH2, trazaCH3])
 
+    fileNameCompleto = path + fileName
+
+    '''
     if tipoArchivo == '1':
         # Archivos de registro continuo
         fileNameCompleto = '/home/rsa/projects/acelerografo-rsa/resultados/mseed/' + fileName
     elif tipoArchivo == '2':
         # Archivos de eventos extraídos
         fileNameCompleto = '/home/rsa/projects/acelerografo-rsa/resultados/eventos-extraidos/' + fileName
+    '''
     
     stData.write(fileNameCompleto, format='MSEED', encoding='STEIM1', reclen=512)
+    print('Se ha creado el archivo: %s' %fileNameCompleto)
 
 
 # Crea una traza de datos con los parámetros especificados y ajusta los datos para incluir ceros en los segundos faltantes si es necesario.
@@ -236,10 +242,19 @@ def main():
 
     tipoArchivo = sys.argv[1] 
 
-    config_mseed_path = '/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_mseed.json'
-    config_dispositivo_path = '/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json'
-    archivoNombresArchivosRC = '/home/rsa/projects/acelerografo-rsa/tmp-files/NombreArchivoRegistroContinuo.tmp'
-    archivoNombresArchivosEE = '/home/rsa/projects/acelerografo-rsa/tmp-files/NombreArchivoEventoExtraido.tmp'
+    # La variable de entorno para definir la ruta del archivo de configuracion:
+    project_local_root = os.getenv("PROJECT_LOCAL_ROOT")
+    if project_local_root:
+        print(f"PROJECT_LOCAL_ROOT: {project_local_root}")
+        # Concatenar PROJECT_LOCAL_CONFIG con las diferentes rutas de los archivos y scripts:
+        config_mseed_path = os.path.join(project_local_root, "configuracion", "configuracion_mseed.json")
+        config_dispositivo_path = os.path.join(project_local_root, "configuracion", "configuracion_dispositivo.json")
+        archivoNombresArchivosRC = os.path.join(project_local_root,"tmp-files", "NombreArchivoRegistroContinuo.tmp")
+        archivoNombresArchivosEE = os.path.join(project_local_root,"tmp-files","NombreArchivoEventoExtraido.tmp")
+        script_subir_archivo_drive = os.path.join(project_local_root,"scripts", "drive","subir_archivo.py")
+    else:
+        print("La variable de entorno no están definida.")
+        return
 
     # Lee el archivo de configuración mseed
     config_mseed = read_fileJSON(config_mseed_path)
@@ -260,6 +275,7 @@ def main():
             lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
             nombreArchvioRegistroContinuo = lineasFicheroNombresArchivos[1].rstrip('\n')
             archivo_binario = path_registro_continuo + nombreArchvioRegistroContinuo
+            path_archivo_salida = config_dispositivo.get("directorios", {}).get("archivos_mseed", "Unknown")
             print(f'Convirtiendo el archivo: {archivo_binario}')
     elif tipoArchivo=='2':
         #Archivos eventos extraidos
@@ -267,6 +283,7 @@ def main():
         with open(archivoNombresArchivosEE) as ficheroNombresArchivos:
             lineasFicheroNombresArchivos = ficheroNombresArchivos.readlines()
             archivo_binario = path_eventos_extraidos + lineasFicheroNombresArchivos[0].rstrip('\n')
+            path_archivo_salida = path_eventos_extraidos
             print(f'Convirtiendo el archivo: {archivo_binario}')
 
     
@@ -275,20 +292,20 @@ def main():
     nombre_archivo_mseed = nombrar_archivo_mseed(codigo_estacion, tiempo_binario)
     datos_archivo_binario, segundos_faltantes = leer_archivo_binario(archivo_binario)
 
-    conversion_mseed_digital(nombre_archivo_mseed, tipoArchivo, tiempo_binario, datos_archivo_binario, segundos_faltantes, config_mseed)
+    conversion_mseed_digital(nombre_archivo_mseed, path_archivo_salida, tiempo_binario, datos_archivo_binario, segundos_faltantes, config_mseed)
 
-    print('Se ha creado el archivo: %s' %nombre_archivo_mseed)
+    #print('Se ha creado el archivo: %s' %nombre_archivo_mseed)
 
     end_time_total = timer()
     print(f"Tiempo total de ejecución: {end_time_total - start_time_total:.4f} segundos")
 
     # Sube los archivos convertidos a Drive
     if tipoArchivo=='1':
-        subprocess.run(["python3", "/home/rsa/projects/acelerografo-rsa/scripts/drive/subir_archivo.py", nombre_archivo_mseed, "3", "1"])
+        subprocess.run(["python3", script_subir_archivo_drive, nombre_archivo_mseed, "3", "1"])
         time.sleep(5)
-        subprocess.run(["python3", "/home/rsa/projects/acelerografo-rsa/scripts/drive/subir_archivo.py", nombreArchvioRegistroContinuo, "1", "0"])
+        subprocess.run(["python3", script_subir_archivo_drive, nombreArchvioRegistroContinuo, "1", "0"])
     elif tipoArchivo=='2':
-        subprocess.run(["python3", "/home/rsa/projects/acelerografo-rsa/scripts/drive/subir_archivo.py", nombre_archivo_mseed, "2", "1"])
+        subprocess.run(["python3", script_subir_archivo_drive, nombre_archivo_mseed, "2", "1"])
 
 #######################################################################################################
 if __name__ == '__main__':

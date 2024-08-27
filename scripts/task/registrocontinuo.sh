@@ -10,7 +10,7 @@ case "$1" in
     sudo killall -q registro_continuo
     sudo -E $PROJECT_LOCAL_ROOT/scripts/acelerografo/ejecutables/registro_continuo &
     sleep 5
-    sudo python3 $PROJECT_LOCAL_ROOT/scripts/mseed/binary_to_mseed.py 1 &
+    python3 $PROJECT_LOCAL_ROOT/scripts/mseed/binary_to_mseed.py 1 &
     ;;
   stop)
     echo "Deteniendo sistema de registro continuo..."
