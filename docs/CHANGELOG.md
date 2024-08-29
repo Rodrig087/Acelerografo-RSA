@@ -55,3 +55,8 @@
 ## 2024-08-19 - scripts/operation/acelerografo/comprobar_registro_5.0.0.c
 ### Cambios 
 - Se cambió la lectura de parametros del dispositivo de un archivo txt a un archivo json.
+
+## 2024-08-29 
+### Cambios / Optimización 
+- Se realizaron cambios en varios de los scripts para utilizar variables de entorno
+- Esta es la ultima version estable, testeada y lista para ser desplegada en produccion.

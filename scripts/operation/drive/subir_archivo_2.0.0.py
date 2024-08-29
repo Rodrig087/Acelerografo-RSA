@@ -132,10 +132,18 @@ def main():
     tipo_archivo = sys.argv[2] 
     borrar_despues = sys.argv[3]
 
-    config_dispositivo_path = '/home/rsa/projects/acelerografo-rsa/configuracion/configuracion_dispositivo.json'
-    credentials_file = '/home/rsa/projects/acelerografo-rsa/configuracion/drive_credentials.json'
-    token_file = '/home/rsa/projects/acelerografo-rsa/configuracion/drive_token.json'
-    log_directory = '/home/rsa/projects/acelerografo-rsa/log-files/'
+    # Obtiene la variable de entorno para definir la ruta del archivo de configuracion:
+    project_local_root = os.getenv("PROJECT_LOCAL_ROOT")
+    if project_local_root:
+        #print(f"PROJECT_LOCAL_ROOT: {project_local_root}")
+        # Concatenar PROJECT_LOCAL_CONFIG con las diferentes rutas de los archivos y scripts:
+        config_dispositivo_path = os.path.join(project_local_root, "configuracion", "configuracion_dispositivo.json")
+        credentials_file = os.path.join(project_local_root, "configuracion", "drive_credentials.json")
+        token_file = os.path.join(project_local_root, "configuracion", "drive_token.json")
+        log_directory = os.path.join(project_local_root, "log-files")
+    else:
+        print("La variable de entorno no están definida.")
+        return
 
     # Lee el archivo de configuración del dispositivo
     config_dispositivo = read_fileJSON(config_dispositivo_path)

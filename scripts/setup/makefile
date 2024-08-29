@@ -1,6 +1,6 @@
 # Definir directorios
-PROJECT_GIT_ROOT = /home/rsa/git/Acelerografo-RSA
-PROJECT_LOCAL_ROOT = /home/rsa/projects/acelerografo-rsa
+#PROJECT_GIT_ROOT = /home/rsa/git/Acelerografo-RSA
+#PROJECT_LOCAL_ROOT = /home/rsa/projects/acelerografo-rsa
 LIB_DIR_SRC = $(PROJECT_GIT_ROOT)/scripts/operation/acelerografo/libraries
 LIB_DIR_DST = $(PROJECT_LOCAL_ROOT)/scripts/acelerografo/libraries
 EXE_DIR = $(PROJECT_LOCAL_ROOT)/scripts/acelerografo/ejecutables

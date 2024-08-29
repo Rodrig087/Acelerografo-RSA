@@ -37,11 +37,8 @@ cp $PROJECT_GIT_ROOT/configuration/configuracion_mseed.json $PROJECT_LOCAL_ROOT/
 
 # Copiar los scripts de Python del proyecto en Git al proyecto local
 cp $PROJECT_GIT_ROOT/scripts/operation/mqtt/cliente*.py $PROJECT_LOCAL_ROOT/scripts/mqtt/cliente.py
-cp $PROJECT_GIT_ROOT/scripts/operation/mqtt/publicar_evento*.py $PROJECT_LOCAL_ROOT/scripts/mqtt/publicar_evento.py
-cp $PROJECT_GIT_ROOT/scripts/operation/mqtt/extraer_evento*.py $PROJECT_LOCAL_ROOT/scripts/mqtt/extraer_evento.py
 cp $PROJECT_GIT_ROOT/scripts/operation/mseed/binary_to_mseed*.py $PROJECT_LOCAL_ROOT/scripts/mseed/binary_to_mseed.py
 cp $PROJECT_GIT_ROOT/scripts/operation/drive/subir_archivo*.py $PROJECT_LOCAL_ROOT/scripts/drive/subir_archivo.py
-cp $PROJECT_GIT_ROOT/scripts/operation/drive/subir_registro*.py $PROJECT_LOCAL_ROOT/scripts/drive/subir_registro.py
 
 # Copiar los task-scripts al directorio /usr/local/bin sin la extensión .sh (esto sí requiere sudo)
 for script in $PROJECT_GIT_ROOT/scripts/task/*.sh; do

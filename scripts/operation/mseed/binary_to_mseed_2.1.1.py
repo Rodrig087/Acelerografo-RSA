@@ -152,15 +152,6 @@ def conversion_mseed_digital(fileName, path, tiempo_binario, datos_archivo_binar
     stData = Stream(traces=[trazaCH1, trazaCH2, trazaCH3])
 
     fileNameCompleto = path + fileName
-
-    '''
-    if tipoArchivo == '1':
-        # Archivos de registro continuo
-        fileNameCompleto = '/home/rsa/projects/acelerografo-rsa/resultados/mseed/' + fileName
-    elif tipoArchivo == '2':
-        # Archivos de eventos extraídos
-        fileNameCompleto = '/home/rsa/projects/acelerografo-rsa/resultados/eventos-extraidos/' + fileName
-    '''
     
     stData.write(fileNameCompleto, format='MSEED', encoding='STEIM1', reclen=512)
     print('Se ha creado el archivo: %s' %fileNameCompleto)
@@ -242,10 +233,10 @@ def main():
 
     tipoArchivo = sys.argv[1] 
 
-    # La variable de entorno para definir la ruta del archivo de configuracion:
+    # Obtiene la variable de entorno para definir la ruta del archivo de configuracion:
     project_local_root = os.getenv("PROJECT_LOCAL_ROOT")
     if project_local_root:
-        print(f"PROJECT_LOCAL_ROOT: {project_local_root}")
+        #print(f"PROJECT_LOCAL_ROOT: {project_local_root}")
         # Concatenar PROJECT_LOCAL_CONFIG con las diferentes rutas de los archivos y scripts:
         config_mseed_path = os.path.join(project_local_root, "configuracion", "configuracion_mseed.json")
         config_dispositivo_path = os.path.join(project_local_root, "configuracion", "configuracion_dispositivo.json")
